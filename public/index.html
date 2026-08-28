@@ -730,7 +730,7 @@
                         </div>
                         <div>
                             <span class="text-slate-400 block font-medium">E-mail:</span>
-                            <span class="text-slate-700 font-mono text-sm" id="resumo-solicitante-email">-</span>
+                            <strong class="text-slate-800 text-sm" id="resumo-solicitante-email">-</strong>
                         </div>
                     </div>
 
@@ -770,10 +770,6 @@
                                 <span class="text-slate-500">Total de Volumes:</span>
                                 <strong class="text-slate-800" id="resumo-volumes-count">1 caixa</strong>
                             </div>
-                            <div class="flex justify-between py-1 border-b border-slate-200">
-                                <span class="text-slate-500">Peso Estimado:</span>
-                                <span class="text-slate-700" id="resumo-volumes-peso">Não informado</span>
-                            </div>
                             <div class="py-1">
                                 <span class="text-slate-500 block mb-0.5">Observações:</span>
                                 <p class="text-slate-600 italic" id="resumo-volumes-obs">-</p>
@@ -796,10 +792,12 @@
                     </div>
 
                     <!-- AVISO FISCAL OBRIGATÓRIO (Regra de Negócio) -->
-                    <div class="badge-fiscal p-4 rounded-xl flex items-start gap-3">
-                        <i class="fa-solid fa-scale-balanced text-xl mt-0.5 text-amber-800"></i>
-                        <div class="text-xs leading-relaxed">
-                            <strong class="font-bold block text-sm mb-1 text-amber-900">Aviso Fiscal Importante</strong>
+                    <div class="p-4 bg-slate-50 border-2 border-[#008497] rounded-xl flex items-start gap-3.5 shadow-2xs">
+                        <div class="w-8 h-8 rounded-lg bg-[#008497] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                            <i class="fa-solid fa-scale-balanced text-sm"></i>
+                        </div>
+                        <div class="text-xs leading-relaxed text-slate-700">
+                            <strong class="font-bold block text-sm mb-1 text-[#008497]">Aviso Fiscal Importante</strong>
                             O processo fiscal de emissão de <strong>Carta de Correção Eletrônica (CC-e)</strong> e <strong>Nota Fiscal de Devolução (NF-e)</strong> é <strong>manual</strong>, realizado exclusivamente pelo Setor Fiscal da Makita do Brasil fora do sistema. A gravação desta solicitação dará início ao procedimento interno.
                         </div>
                     </div>
@@ -816,8 +814,8 @@
                     <button class="btn-voltar-etapa px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> Voltar e Editar
                     </button>
-                    <button id="btn-confirmar-final" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-check"></i> Confirmar Solicitação
+                    <button id="btn-confirmar-final" class="px-8 py-3 bg-[#008497] hover:bg-[#006a78] text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-check"></i> <span>Confirmar Solicitação</span>
                     </button>
                 </div>
             </div>
@@ -1400,6 +1398,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_145100"></script>
+    <script type="module" src="./js/app.js?v=20260828_150200"></script>
 </body>
 </html>

@@ -1048,7 +1048,8 @@ function renderEtapa4Resumo() {
 
     // Volumes
     document.getElementById("resumo-volumes-count").textContent = `${DevolucaoState.volumes.quantidadeCaixas} volume(s) / caixa(s)`;
-    document.getElementById("resumo-volumes-peso").textContent = DevolucaoState.volumes.pesoAproximadoKg ? `${DevolucaoState.volumes.pesoAproximadoKg} kg aprox.` : "Não informado";
+    const elPeso = document.getElementById("resumo-volumes-peso");
+    if (elPeso) elPeso.textContent = DevolucaoState.volumes.pesoAproximadoKg ? `${DevolucaoState.volumes.pesoAproximadoKg} kg aprox.` : "Não informado";
     document.getElementById("resumo-volumes-obs").textContent = DevolucaoState.volumes.observacoesEmbalagem || "Nenhuma observação de embalagem.";
 
     // Logística
@@ -1069,10 +1070,10 @@ function renderEtapa4Resumo() {
     if (btnConfirmar) {
         if (DevolucaoState.idEmEdicao) {
             btnConfirmar.innerHTML = `<i class="fa-solid fa-floppy-disk mr-2"></i> Salvar Alterações da Solicitação`;
-            btnConfirmar.className = "px-8 py-3 bg-[#008497] hover:bg-[#006064] text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer";
+            btnConfirmar.className = "px-8 py-3 bg-[#008497] hover:bg-[#006064] text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer";
         } else {
             btnConfirmar.innerHTML = `<i class="fa-solid fa-check mr-2"></i> Confirmar Solicitação`;
-            btnConfirmar.className = "px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer";
+            btnConfirmar.className = "px-8 py-3 bg-[#008497] hover:bg-[#006064] text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer";
         }
     }
 }
