@@ -693,6 +693,21 @@ input[type="text"].input-search-icon,
 }
 
 /* ========================================================================= */
+/* ABAS FLUTUANTES FIXAS NA LATERAL DIREITA (QUICK ACTIONS FAB)              */
+/* ========================================================================= */
+#floating-side-actions {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 640px) {
+    #floating-side-actions {
+        top: auto !important;
+        bottom: 24px !important;
+        right: 0 !important;
+    }
+}
+
+/* ========================================================================= */
 /* COMPONENTE CUSTOMIZADO DE DROPDOWN / SELECT COM BUSCA (DESIGN SYSTEM)      */
 /* ========================================================================= */
 .custom-select-container {

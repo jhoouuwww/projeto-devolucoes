@@ -393,17 +393,21 @@ function updateAuthUI() {
     const dashboardHeaderPromotor = document.getElementById("dashboard-header-promotor");
 
     if (isUserAdmin) {
-        // TELA EXCLUSIVA JONATHAN MELGAÇO: apenas Painel Geral e Sair (NUNCA Nova Solicitação ou Minhas Devoluções)
+        // TELA EXCLUSIVA JONATHAN MELGAÇO: Painel Geral, Cadastrar Promotor e Sair com layout padronizado
         if (headerButtons) {
             headerButtons.innerHTML = `
-                <button id="btn-nav-adm-todas" class="nav-tab-btn flex items-center space-x-2 bg-white/30 border border-white text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="adm-geral">
+                <button id="btn-nav-adm-todas" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="adm-geral">
                     <i class="fa-solid fa-boxes-packing text-xs"></i> <span>Painel Geral de Devoluções</span>
+                </button>
+                <button id="btn-header-cadastrar-promotor" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Cadastrar novo promotor e sincronizar NFs">
+                    <i class="fa-solid fa-user-plus text-xs"></i> <span>Cadastrar Promotor</span>
                 </button>
                 <button id="btn-logout" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Sair do sistema">
                     <i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span>
                 </button>
             `;
             document.getElementById("btn-nav-adm-todas")?.addEventListener("click", () => setTab("adm-geral"));
+            document.getElementById("btn-header-cadastrar-promotor")?.addEventListener("click", abrirModalCadastrarPromotor);
             document.getElementById("btn-logout")?.addEventListener("click", fazerLogout, { once: true });
         }
         if (containerMiniRelat) containerMiniRelat.classList.add("hidden");
@@ -411,7 +415,7 @@ function updateAuthUI() {
 
         setTab("adm-geral");
     } else {
-        // TELA PADRÃO PROMOTORES: Nova Solicitação, Minhas Devoluções e Sair
+        // TELA PADRÃO PROMOTORES: Nova Solicitação, Minhas Devoluções, Cadastrar Promotor e Sair
         if (headerButtons) {
             headerButtons.innerHTML = `
                 <button id="btn-nav-nova" class="nav-tab-btn flex items-center space-x-2 bg-white/30 border border-white text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="devolucao">
@@ -420,12 +424,16 @@ function updateAuthUI() {
                 <button id="btn-nav-historico" class="nav-tab-btn flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white/90 hover:text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="historico">
                     <i class="fa-solid fa-clock-rotate-left text-xs"></i> <span>Minhas Devoluções</span>
                 </button>
+                <button id="btn-header-cadastrar-promotor" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Cadastrar novo promotor e sincronizar NFs">
+                    <i class="fa-solid fa-user-plus text-xs"></i> <span>Cadastrar Promotor</span>
+                </button>
                 <button id="btn-logout" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Sair do sistema">
                     <i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span>
                 </button>
             `;
             document.getElementById("btn-nav-nova")?.addEventListener("click", () => setTab("devolucao"));
             document.getElementById("btn-nav-historico")?.addEventListener("click", () => setTab("historico"));
+            document.getElementById("btn-header-cadastrar-promotor")?.addEventListener("click", abrirModalCadastrarPromotor);
             document.getElementById("btn-logout")?.addEventListener("click", fazerLogout, { once: true });
         }
         if (containerMiniRelat) containerMiniRelat.classList.remove("hidden");
@@ -1988,13 +1996,15 @@ function initEventListeners() {
     const btnCancelarCadPromotor = document.getElementById("btn-cancelar-cad-promotor");
     const formCadPromotor = document.getElementById("form-cadastrar-promotor");
 
-    btnAbrirCadPromotor?.addEventListener("click", () => {
+    window.abrirModalCadastrarPromotor = function() {
         if (modalCadPromotor) {
             formCadPromotor?.reset();
             document.getElementById("cad-promotor-status-msg")?.classList.add("hidden");
             modalCadPromotor.classList.remove("hidden");
         }
-    });
+    };
+
+    btnAbrirCadPromotor?.addEventListener("click", window.abrirModalCadastrarPromotor);
 
     const fecharModalCadPromotor = () => {
         if (modalCadPromotor) modalCadPromotor.classList.add("hidden");
@@ -2028,6 +2038,19 @@ function initEventListeners() {
                 if (lblBtn) lblBtn.textContent = "Salvar e Sincronizar NFs";
             }
         }
+    });
+
+    // Bloco de Abas Flutuantes Fixas na Lateral Direita (FABs)
+    document.getElementById("fab-exportar-excel")?.addEventListener("click", () => {
+        exportarSolicitacoesParaExcel();
+    });
+    document.getElementById("fab-cadastrar-promotor")?.addEventListener("click", () => {
+        window.abrirModalCadastrarPromotor();
+    });
+    document.getElementById("fab-historico-devolucoes")?.addEventListener("click", () => {
+        const emailLower = String(AuthState.profile?.email || "").toLowerCase().trim();
+        const isUserAdmin = emailLower === "j_melgaco@makita.com.br" || emailLower.startsWith("j_melgaco@") || emailLower === "88901" || AuthState.profile?.protheus === "88901";
+        setTab(isUserAdmin ? "adm-geral" : "historico");
     });
 
     document.getElementById("btn-header-export-excel")?.addEventListener("click", () => {
