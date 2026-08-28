@@ -1545,10 +1545,10 @@ function initEventListeners() {
         const elDetalhes = document.getElementById("txt-cep-filial-detalhes");
 
         const f = res.filialRecomendada;
-        if (elNome) elNome.innerHTML = `<i class="fa-solid fa-star text-amber-500 mr-1"></i> Filial Recomendada: <strong>${f.nomeFantasia} (${f.sigla})</strong>`;
+        if (elNome) elNome.innerHTML = `<i class="fa-solid fa-star text-[#008497] mr-1.5"></i> Filial Recomendada: <strong>${f.nomeFantasia} (${f.sigla})</strong>`;
         if (elDist) elDist.textContent = res.distanciaKm !== null ? `~ ${res.distanciaKm} km de você` : `Sugerida por ${f.uf}`;
         if (elEndUser) elEndUser.innerHTML = `<i class="fa-solid fa-location-dot text-[#008497] mr-1.5"></i> <strong>Seu endereço:</strong> ${res.enderecoUsuario}`;
-        if (elDetalhes) elDetalhes.innerHTML = `<i class="fa-solid fa-building text-slate-500 mr-1.5"></i> <strong>Endereço Filial:</strong> ${f.logradouro}, ${f.logNumero} - ${f.bairro} (${f.cidade}/${f.uf}) <br> <i class="fa-solid fa-phone text-slate-500 mr-1.5 mt-1"></i> <strong>Telefone:</strong> ${f.fone}`;
+        if (elDetalhes) elDetalhes.innerHTML = `<i class="fa-solid fa-building text-[#008497] mr-1.5"></i> <strong>Endereço Filial:</strong> ${f.logradouro}, ${f.logNumero} - ${f.bairro} (${f.cidade}/${f.uf}) <br> <i class="fa-solid fa-phone text-[#008497] mr-1.5 mt-1.5 inline-block"></i> <strong>Telefone:</strong> ${f.fone}`;
 
         if (cardResultado) cardResultado.classList.remove("hidden");
 
