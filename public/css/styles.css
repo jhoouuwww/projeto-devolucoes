@@ -414,6 +414,16 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 132, 151, 0.15);
 }
 
+/* Garante recuo correto para campos de busca com ícone de lupa à esquerda */
+input[type="text"].pl-9,
+input[type="text"].pl-10,
+input[type="text"].pl-11,
+input[type="text"].input-search-icon,
+#input-search-adm-main,
+#nfe-search-input {
+    padding-left: 38px !important;
+}
+
 /* Estilo dos Cards de Seleção Logística */
 .logistica-card {
     border: 1.5px solid #cbd5e1;
