@@ -26,7 +26,8 @@ import {
     where,
     orderBy,
     serverTimestamp,
-    arrayUnion
+    arrayUnion,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { FIREBASE_CONFIG } from "./config.js";
 
@@ -64,5 +65,6 @@ export {
     where,
     orderBy,
     serverTimestamp,
-    arrayUnion
+    arrayUnion,
+    writeBatch
 };

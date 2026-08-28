@@ -2,7 +2,7 @@
  * Módulo de Administração — Importador Direto do Excel e Vínculos Protheus
  */
 import { AuthState } from "./auth.js";
-import { db, doc, setDoc, collection, getDocs, addDoc, serverTimestamp } from "./firebase.js";
+import { db, doc, setDoc, collection, getDocs, addDoc, serverTimestamp, writeBatch } from "./firebase.js";
 import { VINCULOS_INICIAIS } from "./config.js";
 
 export const AdminState = {
@@ -296,4 +296,80 @@ export async function carregarTodasSolicitacoes() {
     lista.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
     AdminState.todasSolicitacoes = lista;
     return lista;
+}
+
+/**
+ * Cadastra um novo promotor na coleção usuarios_app e atualiza todas as NF-e órfãs
+ * que subiram com e-mail fictício ({codigoProtheus}@makita.com.br)
+ */
+export async function cadastrarPromotorComSyncNfe({ codigoProtheus, emailReal, senha }) {
+    const protheus = String(codigoProtheus || "").trim();
+    const email = String(emailReal || "").toLowerCase().trim();
+    const password = String(senha || "").trim();
+
+    if (!protheus) throw new Error("Informe o código Protheus do promotor.");
+    if (!email || !email.includes("@")) throw new Error("Informe um e-mail corporativo válido.");
+    if (!password || password.length < 6) throw new Error("A senha deve ter no mínimo 6 caracteres.");
+
+    // Ação A: Salvar na coleção usuarios_app
+    const userDocRef = doc(db, "usuarios_app", protheus);
+    await setDoc(userDocRef, {
+        codigoProtheus: protheus,
+        email: email,
+        senha: password,
+        ativo: true,
+        dataCadastro: serverTimestamp(),
+        cadastradoPor: AuthState.profile?.email || "admin"
+    }, { merge: true });
+
+    // Também sincroniza em usuarios_protheus para compatibilidade total com o login web
+    try {
+        const vinculoWebRef = doc(db, "usuarios_protheus", email);
+        await setDoc(vinculoWebRef, {
+            protheus: protheus,
+            email: email,
+            nome: email.split("@")[0].replace(/[._-]/g, " "),
+            cargo: "Promotor Técnico",
+            filial: "01 - Matriz",
+            isAdmin: false,
+            atualizadoEm: serverTimestamp()
+        }, { merge: true });
+    } catch (e) {
+        console.warn("Aviso: Falha ao sincronizar em usuarios_protheus:", e);
+    }
+
+    // Ação B: Atualização em lote (batch) das NF-e em promotores/{protheus}/nfe_disponiveis/
+    let totalAtualizadas = 0;
+    try {
+        const subcolRef = collection(db, "promotores", protheus, "nfe_disponiveis");
+        const snap = await getDocs(subcolRef);
+
+        if (!snap.empty) {
+            const batch = writeBatch(db);
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                // Atualiza se o e-mail for fictício ou diferente do e-mail real
+                if (data.emailUsuario !== email) {
+                    batch.update(docSnap.ref, {
+                        emailUsuario: email,
+                        atualizadoEm: serverTimestamp()
+                    });
+                    totalAtualizadas++;
+                }
+            });
+
+            if (totalAtualizadas > 0) {
+                await batch.commit();
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao atualizar NF-e órfãs:", e);
+    }
+
+    return {
+        sucesso: true,
+        protheus: protheus,
+        email: email,
+        notasAtualizadas: totalAtualizadas
+    };
 }

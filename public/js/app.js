@@ -35,7 +35,8 @@ import {
     salvarBaseExcelNoFirestore, 
     cadastrarVinculoUsuario, 
     listarVinculosUsuarios, 
-    carregarTodasSolicitacoes 
+    carregarTodasSolicitacoes,
+    cadastrarPromotorComSyncNfe
 } from "./admin.js";
 
 import { 
@@ -1734,6 +1735,55 @@ function initEventListeners() {
 
     document.getElementById("btn-adm-export-excel-main")?.addEventListener("click", () => {
         exportarSolicitacoesParaExcel();
+    });
+
+    // Modal Cadastrar Promotor com Auto-Sync de NF-e
+    const modalCadPromotor = document.getElementById("modal-cadastrar-promotor");
+    const btnAbrirCadPromotor = document.getElementById("btn-abrir-modal-cadastrar-promotor");
+    const btnFecharCadPromotor = document.getElementById("btn-fechar-modal-cad-promotor");
+    const btnCancelarCadPromotor = document.getElementById("btn-cancelar-cad-promotor");
+    const formCadPromotor = document.getElementById("form-cadastrar-promotor");
+
+    btnAbrirCadPromotor?.addEventListener("click", () => {
+        if (modalCadPromotor) {
+            formCadPromotor?.reset();
+            document.getElementById("cad-promotor-status-msg")?.classList.add("hidden");
+            modalCadPromotor.classList.remove("hidden");
+        }
+    });
+
+    const fecharModalCadPromotor = () => {
+        if (modalCadPromotor) modalCadPromotor.classList.add("hidden");
+    };
+
+    btnFecharCadPromotor?.addEventListener("click", fecharModalCadPromotor);
+    btnCancelarCadPromotor?.addEventListener("click", fecharModalCadPromotor);
+
+    formCadPromotor?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const protheus = document.getElementById("cad-promotor-protheus")?.value || "";
+        const email = document.getElementById("cad-promotor-email")?.value || "";
+        const senha = document.getElementById("cad-promotor-senha")?.value || "";
+        const btnSalvar = document.getElementById("btn-salvar-cad-promotor");
+        const lblBtn = document.getElementById("lbl-btn-salvar-promotor");
+
+        if (btnSalvar) {
+            btnSalvar.disabled = true;
+            if (lblBtn) lblBtn.textContent = "Salvando e Sincronizando...";
+        }
+
+        try {
+            const res = await cadastrarPromotorComSyncNfe({ codigoProtheus: protheus, emailReal: email, senha: senha });
+            showToast(`Promotor ${protheus} cadastrado com sucesso! ${res.notasAtualizadas} NF-e vinculadas ao e-mail ${email}.`, "success");
+            fecharModalCadPromotor();
+        } catch (err) {
+            showToast("Erro ao cadastrar promotor: " + err.message, "error");
+        } finally {
+            if (btnSalvar) {
+                btnSalvar.disabled = false;
+                if (lblBtn) lblBtn.textContent = "Salvar e Sincronizar NFs";
+            }
+        }
     });
 
     document.getElementById("btn-header-export-excel")?.addEventListener("click", () => {

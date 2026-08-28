@@ -38,5 +38,10 @@ service cloud.firestore {
         allow read, write: if isMakitaUser();
       }
     }
+
+    // 6. Coleção de Usuários e Promotores do App (usuarios_app)
+    match /usuarios_app/{document} {
+      allow read, write: if isMakitaUser();
+    }
   }
 }

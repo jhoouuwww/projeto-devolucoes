@@ -999,6 +999,9 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
                     <p class="text-xs font-medium text-slate-500 mt-1">Acompanhamento de todas as solicitações de devoluções de ativos abertas pelos promotores, especialistas e vendedores.</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button id="btn-abrir-modal-cadastrar-promotor" class="flex items-center space-x-2 bg-[#008497] hover:bg-[#006a78] text-white px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-user-plus"></i> <span>Cadastrar Promotor</span>
+                    </button>
                     <button id="btn-adm-export-excel-main" class="flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i> <span>Exportar Excel</span>
                     </button>
@@ -1191,6 +1194,106 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- ================================================================= -->
+    <!-- MODAL DE CADASTRO DE PROMOTOR (COM AUTO-SYNC DE NOTAS FISCAIS)    -->
+    <!-- ================================================================= -->
+    <div id="modal-cadastrar-promotor" class="hidden fixed inset-0 z-[650] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <!-- Header Modal -->
+            <div class="bg-[#008497] px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white text-base">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-tight">Cadastrar Promotor</h2>
+                        <p class="text-[11px] text-teal-100 font-normal">Criação de acesso e vinculação automática de NFs</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-fechar-modal-cad-promotor" class="text-white/80 hover:text-white hover:bg-white/10 w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Formulário -->
+            <form id="form-cadastrar-promotor" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Código Protheus <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-badge absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input
+                            type="text"
+                            id="cad-promotor-protheus"
+                            required
+                            placeholder="Ex: 22371"
+                            class="w-full !pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#008497]/30 focus:border-[#008497] focus:bg-white transition-all outline-none"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">O código de cliente/vendedor cadastrado no Protheus.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        E-mail Real Corporativo <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input
+                            type="email"
+                            id="cad-promotor-email"
+                            required
+                            placeholder="Ex: b_espindula@makita.com.br"
+                            class="w-full !pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#008497]/30 focus:border-[#008497] focus:bg-white transition-all outline-none"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">Substituirá o e-mail fictício ({código}@makita.com.br) nas NFs.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Senha de Acesso <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input
+                            type="password"
+                            id="cad-promotor-senha"
+                            required
+                            minlength="6"
+                            placeholder="Mínimo 6 caracteres"
+                            class="w-full !pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-[#008497]/30 focus:border-[#008497] focus:bg-white transition-all outline-none"
+                        >
+                    </div>
+                </div>
+
+                <div id="cad-promotor-status-msg" class="hidden text-xs p-3 rounded-lg bg-teal-50 border border-teal-100 text-teal-800"></div>
+
+                <!-- Botões de Ação -->
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button
+                        type="button"
+                        id="btn-cancelar-cad-promotor"
+                        class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        id="btn-salvar-cad-promotor"
+                        class="px-5 py-2 text-xs font-bold text-white bg-[#008497] hover:bg-[#006a78] rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span id="lbl-btn-salvar-promotor">Salvar e Sincronizar NFs</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
     <!-- 5. SEÇÃO DE IMPRESSÃO DE COMPROVANTE (EXCLUSIVA PARA PRINT)       -->
     <!-- ================================================================= -->
     <div id="print-protocol-section" class="hidden">
@@ -1200,6 +1303,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_122700"></script>
+    <script type="module" src="./js/app.js?v=20260828_125700"></script>
 </body>
 </html>
