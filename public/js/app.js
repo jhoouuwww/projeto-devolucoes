@@ -457,8 +457,8 @@ function renderFluxoDevolucao() {
         }
     }
 
-    // Oculta/Exibe Containers de cada Etapa
-    for (let i = 1; i <= 5; i++) {
+    // Oculta/Exibe Containers de cada Etapa (1 a 4)
+    for (let i = 1; i <= 4; i++) {
         const pane = document.getElementById(`step-pane-${i}`);
         if (pane) {
             pane.classList.toggle("hidden", i !== step);
@@ -470,7 +470,6 @@ function renderFluxoDevolucao() {
     if (step === 2) renderEtapa2Volumes();
     if (step === 3) renderEtapa3Logistica();
     if (step === 4) renderEtapa4Resumo();
-    if (step === 5) renderEtapa5Sucesso();
 }
 
 /**
@@ -845,69 +844,60 @@ function renderEtapa4Resumo() {
 }
 
 /**
- * ETAPA 5: Sucesso e Comprovante
+ * Modal de Confirmação de Sucesso da Devolução
  */
-function renderEtapa5Sucesso() {
-    const sol = DevolucaoState.solicitacaoConcluida;
-    if (!sol) return;
+function exibirModalSucessoDevolucao(sol) {
+    const modal = document.getElementById("modal-sucesso-devolucao");
+    if (!modal) return;
 
-    document.getElementById("sucesso-protocolo-badge").textContent = sol.protocolo;
-    document.getElementById("sucesso-data-hora").textContent = new Date().toLocaleString("pt-BR");
-    document.getElementById("sucesso-solicitante-nome").textContent = AuthState.profile?.nome || "";
-    document.getElementById("sucesso-protheus-code").textContent = AuthState.profile?.protheus || "";
-    document.getElementById("sucesso-total-volumes").textContent = `${DevolucaoState.volumes.quantidadeCaixas} caixas`;
+    const solicitanteNome = sol?.solicitante?.nome || AuthState.profile?.nome || "Colaborador";
+    const protheusCode = sol?.solicitante?.protheus || AuthState.profile?.protheus || "—";
+    const qtdVolumes = sol?.volumes?.quantidadeCaixas || DevolucaoState.volumes.quantidadeCaixas || 1;
 
-    // Preenche a seção de impressão
-    const printSection = document.getElementById("print-protocol-content");
-    if (printSection) {
-        printSection.innerHTML = `
-            <div class="border-b-2 border-[#008497] pb-4 mb-4 flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800">MAKITA DO BRASIL — SOLICITAÇÃO DE DEVOLUÇÃO</h2>
-                    <p class="text-xs text-slate-500">Comprovante Interno de Registro de Devolução de Máquinas/Ativos</p>
-                </div>
-                <div class="text-right">
-                    <span class="text-xs font-bold text-slate-400">PROTOCOLO</span>
-                    <div class="text-lg font-mono font-bold text-[#008497]">${sol.protocolo}</div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 text-xs mb-4">
-                <div><strong>Solicitante:</strong> ${AuthState.profile?.nome} (${AuthState.profile?.email})</div>
-                <div><strong>Código Protheus:</strong> ${AuthState.profile?.protheus} - ${AuthState.profile?.filial}</div>
-                <div><strong>Data do Registro:</strong> ${new Date().toLocaleString("pt-BR")}</div>
-                <div><strong>Volumes (Caixas):</strong> ${DevolucaoState.volumes.quantidadeCaixas}</div>
-            </div>
-            <div class="mb-4">
-                <strong class="text-xs">Modalidade de Logística:</strong>
-                <p class="text-xs text-slate-600">${DevolucaoState.logistica.tipo === 'braspress' ? 'Retirada Filial Braspress: ' + DevolucaoState.logistica.filialBraspress : 'Transportadora Regional: ' + DevolucaoState.logistica.transportadoraRegional.nome}</p>
-            </div>
-            <table class="w-full text-xs text-left border-collapse mb-4">
-                <thead>
-                    <tr class="bg-slate-100 border-b border-slate-300">
-                        <th class="p-2">Código Item</th>
-                        <th class="p-2">Descrição da Máquina</th>
-                        <th class="p-2">Nota Fiscal</th>
-                        <th class="p-2">Pedido</th>
-                        <th class="p-2 text-right">Qtd</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${Array.from(DevolucaoState.itensSelecionados.values()).map(it => `
-                        <tr class="border-b border-slate-200">
-                            <td class="p-2 font-mono font-bold">${it.codigoItem}</td>
-                            <td class="p-2">${it.descricao}</td>
-                            <td class="p-2 font-mono">${it.notaFiscal}</td>
-                            <td class="p-2 font-mono">${it.pedido}</td>
-                            <td class="p-2 text-right font-bold">${it.quantidadeDevolvida}</td>
-                        </tr>
-                    `).join("")}
-                </tbody>
-            </table>
-            <div class="p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
-                <strong>Aviso Fiscal:</strong> Esta solicitação foi registrada no sistema. A emissão da Nota Fiscal de Devolução (NF-e) ou Carta de Correção (CC-e) será efetuada manualmente pelo setor fiscal da Makita do Brasil.
-            </div>
-        `;
+    const elNome = document.getElementById("modal-sucesso-solicitante");
+    const elProtheus = document.getElementById("modal-sucesso-protheus");
+    const elVolumes = document.getElementById("modal-sucesso-volumes");
+    const elListaItens = document.getElementById("modal-sucesso-itens-lista");
+
+    if (elNome) elNome.textContent = solicitanteNome;
+    if (elProtheus) elProtheus.textContent = protheusCode;
+    if (elVolumes) elVolumes.textContent = `${qtdVolumes} ${qtdVolumes > 1 ? 'caixas' : 'caixa'}`;
+
+    // Renderiza a lista de itens devolvidos
+    if (elListaItens) {
+        const itensArr = (sol && Array.isArray(sol.itens) && sol.itens.length > 0)
+            ? sol.itens
+            : Array.from(DevolucaoState.itensSelecionados.values());
+
+        if (itensArr.length > 0) {
+            elListaItens.innerHTML = itensArr.map(it => {
+                const cod = it.codigoItem || it.produto || "—";
+                const desc = it.descricao || "—";
+                const nf = it.notaFiscal || it.nfRemessa || "—";
+                const qtd = it.quantidadeDevolvida || it.quantidade || it.saldo || 1;
+
+                return `
+                    <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
+                        <div class="min-w-0 flex-1 pr-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-[#008497]">${cod}</span>
+                                <span class="text-[10px] text-slate-400 font-mono">NF: ${nf}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 truncate mt-0.5">${desc}</p>
+                        </div>
+                        <span class="bg-teal-50 text-[#008497] font-bold px-2 py-0.5 rounded text-[11px] shrink-0 border border-teal-200/80">
+                            ${qtd} un
+                        </span>
+                    </div>
+                `;
+            }).join("");
+        } else {
+            elListaItens.innerHTML = `<p class="text-slate-400 text-center py-2 text-xs">Nenhum item especificado.</p>`;
+        }
     }
+
+    // Exibe o modal centralizado com backdrop
+    modal.classList.remove("hidden");
 }
 
 /**
@@ -1470,7 +1460,7 @@ function initEventListeners() {
         });
     });
 
-    // 6. Confirmação Final e Gravação no Firestore
+    // 6. Confirmação Final e Gravação no Firestore (Abre o Modal de Sucesso)
     document.getElementById("btn-confirmar-final")?.addEventListener("click", async () => {
         const btn = document.getElementById("btn-confirmar-final");
         btn.disabled = true;
@@ -1479,8 +1469,7 @@ function initEventListeners() {
         try {
             const res = await confirmarEGravarSolicitacao();
             showToast("Solicitação de devolução registrada com sucesso!", "success");
-            renderFluxoDevolucao();
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            exibirModalSucessoDevolucao(res);
         } catch (err) {
             showToast("Erro ao gravar solicitação: " + err.message, "error");
         } finally {
@@ -1489,21 +1478,18 @@ function initEventListeners() {
         }
     });
 
-    // 7. Botão Nova Devolução após sucesso
-    document.getElementById("btn-nova-devolucao")?.addEventListener("click", () => {
+    // 7. Botão Nova Devolução dentro do Modal de Sucesso
+    document.getElementById("btn-modal-nova-devolucao")?.addEventListener("click", () => {
+        document.getElementById("modal-sucesso-devolucao")?.classList.add("hidden");
         _nfeListenersAttached = false;
         _nfeSearchTerm = "";
         _nfeFilterField = "todos";
         reiniciarFluxoDevolucao();
         carregarItensDoUsuario().then(() => {
             renderFluxoDevolucao();
+            renderMiniRelatorioAtivos();
+            window.scrollTo({ top: 0, behavior: "smooth" });
         });
-    });
-
-
-    // 8. Botão de Impressão do Comprovante
-    document.getElementById("btn-imprimir-protocolo")?.addEventListener("click", () => {
-        window.print();
     });
 
     // 8.1. Busca por CEP para encontrar a Filial Braspress mais próxima

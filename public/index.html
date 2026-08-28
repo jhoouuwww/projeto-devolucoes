@@ -738,61 +738,9 @@
                     <button class="btn-voltar-etapa px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> Voltar e Editar
                     </button>
-                    <button id="btn-confirmar-final" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2">
+                    <button id="btn-confirmar-final" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-check"></i> Confirmar Solicitação
                     </button>
-                </div>
-            </div>
-
-            <!-- ETAPA 5: SUCESSO E PROTOCOLO -->
-            <div id="step-pane-5" class="space-y-6 hidden">
-                <div class="bg-white p-8 rounded-2xl border border-emerald-200 shadow-md text-center max-w-2xl mx-auto space-y-6">
-                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
-
-                    <div>
-                        <h2 class="text-2xl font-extrabold text-slate-800">Solicitação Gravada com Sucesso!</h2>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Sua solicitação de devolução foi registrada no banco de dados e encaminhada para conferência fiscal.
-                        </p>
-                    </div>
-
-                    <!-- Badge do Protocolo -->
-                    <div class="p-5 bg-teal-50 border-2 border-dashed border-[#008497] rounded-2xl">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Número do Protocolo</span>
-                        <div class="text-2xl md:text-3xl font-mono font-black text-[#008497] tracking-wide mt-1" id="sucesso-protocolo-badge">
-                            DEV-2026-XXXX
-                        </div>
-                        <div class="text-[11px] text-slate-500 mt-2">
-                            Registrado em: <span id="sucesso-data-hora" class="font-medium">--/--/----</span>
-                        </div>
-                    </div>
-
-                    <!-- Resumo Rápido -->
-                    <div class="grid grid-cols-3 gap-3 p-4 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100">
-                        <div>
-                            <span class="text-slate-400 block">Solicitante</span>
-                            <strong class="text-slate-800" id="sucesso-solicitante-nome">-</strong>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 block">Protheus</span>
-                            <strong class="font-mono text-[#008497]" id="sucesso-protheus-code">-</strong>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 block">Volumes</span>
-                            <strong class="text-slate-800" id="sucesso-total-volumes">1 caixa</strong>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                        <button id="btn-imprimir-protocolo" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow">
-                            <i class="fa-solid fa-print"></i> Imprimir Comprovante
-                        </button>
-                        <button id="btn-nova-devolucao" class="px-6 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow">
-                            <i class="fa-solid fa-plus"></i> Nova Solicitação
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -1297,6 +1245,66 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- ================================================================= -->
+    <!-- MODAL DE CONFIRMAÇÃO DE SUCESSO DA DEVOLUÇÃO (COMPLETO)          -->
+    <!-- ================================================================= -->
+    <div id="modal-sucesso-devolucao" class="hidden fixed inset-0 z-[700] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-[fadeIn_0.2s_ease-out] p-6 sm:p-8 text-center space-y-5">
+            
+            <!-- 1. Ícone de Sucesso -->
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+                <i class="fa-solid fa-check"></i>
+            </div>
+
+            <!-- 2. Título e Subtítulo -->
+            <div>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">Solicitação Gravada com Sucesso!</h2>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Sua solicitação de devolução foi registrada no banco de dados e encaminhada para conferência fiscal.
+                </p>
+            </div>
+
+            <!-- 3. Bloco de Informações Resumidas (3 colunas) -->
+            <div class="grid grid-cols-3 gap-2 p-3.5 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100 text-center">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Solicitante</span>
+                    <strong class="text-slate-800 text-xs truncate block mt-0.5" id="modal-sucesso-solicitante">-</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Protheus</span>
+                    <strong class="font-mono text-[#008497] text-xs block mt-0.5" id="modal-sucesso-protheus">-</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Volumes</span>
+                    <strong class="text-slate-800 text-xs block mt-0.5" id="modal-sucesso-volumes">1 caixa</strong>
+                </div>
+            </div>
+
+            <!-- 4. NOVO CAMPO: Lista de Itens Devolvidos -->
+            <div class="text-left space-y-2">
+                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Ativos / Itens solicitados para devolução:
+                </label>
+                <div id="modal-sucesso-itens-lista" class="max-h-48 overflow-y-auto space-y-1.5 pr-1 text-xs divide-y divide-slate-100 border border-slate-100 rounded-xl p-2 bg-slate-50/50">
+                    <!-- Preenchido dinamicamente via app.js -->
+                </div>
+            </div>
+
+            <!-- 5. Ação Final: Botão Nova Solicitação -->
+            <div class="pt-2">
+                <button 
+                    type="button" 
+                    id="btn-modal-nova-devolucao" 
+                    class="w-full py-3 bg-[#008497] hover:bg-[#006064] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                    <span>+ Nova Solicitação</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
     <!-- 5. SEÇÃO DE IMPRESSÃO DE COMPROVANTE (EXCLUSIVA PARA PRINT)       -->
     <!-- ================================================================= -->
     <div id="print-protocol-section" class="hidden">
@@ -1306,6 +1314,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_140000"></script>
+    <script type="module" src="./js/app.js?v=20260828_140300"></script>
 </body>
 </html>
