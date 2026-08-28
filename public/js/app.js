@@ -452,7 +452,7 @@ function renderFluxoDevolucao() {
     if (bannerEdicao) {
         if (DevolucaoState.idEmEdicao) {
             bannerEdicao.classList.remove("hidden");
-            if (lblProtocolo) lblProtocolo.textContent = DevolucaoState.protocoloEmEdicao || "DEV-2026-XXXX";
+            if (lblProtocolo) lblProtocolo.textContent = DevolucaoState.protocoloEmEdicao || "#00000";
         } else {
             bannerEdicao.classList.add("hidden");
         }
