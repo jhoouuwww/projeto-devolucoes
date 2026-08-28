@@ -1026,20 +1026,23 @@ let _todasSolicitacoesCache = [];
 
 export async function renderAdmGeralScreen() {
     const tbody = document.getElementById("tbody-adm-main-solicitacoes");
-    const loadingEl = document.getElementById("adm-main-loading");
-    const emptyEl = document.getElementById("adm-main-empty");
 
-    if (loadingEl) loadingEl.classList.remove("hidden");
-    if (emptyEl) emptyEl.classList.add("hidden");
-    if (tbody) tbody.innerHTML = "";
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-16 bg-white">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-[#008497] mb-2"></i>
+                    <p class="text-xs text-slate-500 font-medium">Carregando todas as solicitações do sistema...</p>
+                </td>
+            </tr>
+        `;
+    }
 
     try {
         _todasSolicitacoesCache = await carregarTodasSolicitacoes();
     } catch (e) {
         console.error("Erro ao carregar solicitações para o ADM:", e);
         _todasSolicitacoesCache = [];
-    } finally {
-        if (loadingEl) loadingEl.classList.add("hidden");
     }
 
     _filtrarERenderizarAdmGeral();
@@ -1047,7 +1050,6 @@ export async function renderAdmGeralScreen() {
 
 function _filtrarERenderizarAdmGeral() {
     const tbody = document.getElementById("tbody-adm-main-solicitacoes");
-    const emptyEl = document.getElementById("adm-main-empty");
     const termo = (document.getElementById("input-search-adm-main")?.value || "").toLowerCase().trim();
 
     let filtradas = _todasSolicitacoesCache;
@@ -1085,12 +1087,21 @@ function _filtrarERenderizarAdmGeral() {
     if (elKpiRegional) elKpiRegional.textContent = totalRegional;
 
     if (filtradas.length === 0) {
-        if (emptyEl) emptyEl.classList.remove("hidden");
-        if (tbody) tbody.innerHTML = "";
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-16 bg-white">
+                        <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-2xl mx-auto mb-3">
+                            <i class="fa-solid fa-inbox"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-600">Nenhuma solicitação de devolução registrada no momento.</p>
+                        <p class="text-xs text-slate-400 mt-1">Assim que os promotores realizarem solicitações, elas aparecerão listadas aqui.</p>
+                    </td>
+                </tr>
+            `;
+        }
         return;
     }
-
-    if (emptyEl) emptyEl.classList.add("hidden");
 
     if (tbody) {
         tbody.innerHTML = filtradas.map(sol => {
