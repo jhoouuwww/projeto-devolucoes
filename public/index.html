@@ -197,13 +197,16 @@
             </div>
 
             <!-- BANNER DE MODO DE EDIÇÃO -->
-            <div id="banner-modo-edicao" class="hidden p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
-                <div class="flex items-center gap-2.5 text-amber-900 min-w-0">
-                    <i class="fa-solid fa-pen-to-square text-base text-amber-600 shrink-0"></i>
-                    <span class="truncate">Modo de Edição ativo para a solicitação <strong id="lbl-edicao-protocolo" class="font-mono text-amber-900 font-bold">DEV-2026-XXXX</strong>. Altere itens, volumes ou logística.</span>
+            <div id="banner-modo-edicao" class="hidden p-3.5 bg-slate-50 border-2 border-[#008497] rounded-xl flex items-center justify-between gap-3 text-xs shadow-xs">
+                <div class="flex items-center gap-2.5 text-slate-800 min-w-0">
+                    <div class="w-7 h-7 rounded-lg bg-[#008497] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </div>
+                    <span class="truncate font-medium">Modo de Edição ativo para a solicitação <strong id="lbl-edicao-protocolo" class="font-mono text-[#008497] font-bold">DEV-2026-XXXX</strong>. Altere itens, volumes ou logística.</span>
                 </div>
-                <button type="button" id="btn-cancelar-edicao-banner" class="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-lg border border-amber-300 shadow-2xs whitespace-nowrap cursor-pointer shrink-0">
-                    Cancelar Edição
+                <button type="button" id="btn-cancelar-edicao-banner" class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-[#008497] font-bold rounded-lg border border-slate-300 shadow-2xs whitespace-nowrap cursor-pointer shrink-0 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                    <span>Cancelar Edição</span>
                 </button>
             </div>
 
@@ -473,8 +476,8 @@
                         </div>
 
                         <div class="mt-6 pt-4 border-t border-slate-100">
-                            <div class="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div class="flex items-center gap-2 text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                <i class="fa-solid fa-circle-info text-[#008497]"></i>
                                 <span>Certifique-se de que os itens estejam bem acondicionados.</span>
                             </div>
                         </div>
@@ -1385,6 +1388,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_142700"></script>
+    <script type="module" src="./js/app.js?v=20260828_143300"></script>
 </body>
 </html>
