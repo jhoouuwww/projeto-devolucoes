@@ -145,7 +145,12 @@
     <!-- 4. CORPO PRINCIPAL DA APLICAÇÃO                                   -->
     <!-- ================================================================= -->
     <main id="app-main" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 relative z-0 hidden">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-8 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-8">
+
+        <!-- ============================================================= -->
+        <!-- ABA 1: NOVA SOLICITAÇÃO DE DEVOLUÇÃO (WIZARD POR ETAPAS)      -->
+        <!-- ============================================================= -->
+        <div id="view-devolucao" class="space-y-6">
             
             <!-- Barra de Saudação / Dashboard-Header Promotor -->
             <div id="dashboard-header-promotor" class="dashboard-header flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-5">
@@ -230,11 +235,6 @@
                     </div>
                 </div>
             </div>
-
-        <!-- ============================================================= -->
-        <!-- ABA 1: NOVA SOLICITAÇÃO DE DEVOLUÇÃO (WIZARD POR ETAPAS)      -->
-        <!-- ============================================================= -->
-        <div id="view-devolucao" class="space-y-6">
 
             <!-- STEP INDICATOR BAR -->
             <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -1167,6 +1167,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_121600"></script>
+    <script type="module" src="./js/app.js?v=20260828_122100"></script>
 </body>
 </html>
