@@ -768,6 +768,214 @@ function renderEtapa2Volumes() {
 /**
  * ETAPA 3: Renderização de Logística
  */
+/**
+ * Componente Customizado de Dropdown Searchable de Filiais Braspress (Design System)
+ */
+let _filiaisCustomSelectInitialized = false;
+
+export function selecionarFilialBraspress(valor, dadosOpcionais = null) {
+    const inputHidden = document.getElementById("select-filial-braspress");
+    const lblTrigger = document.getElementById("label-filial-braspress");
+    const sublblTrigger = document.getElementById("sublabel-filial-braspress");
+    const containerOutra = document.getElementById("container-filial-outra");
+    const container = document.getElementById("custom-select-filial-container");
+    const menu = document.getElementById("menu-filial-braspress");
+
+    const valLimpo = valor || "";
+    if (inputHidden) inputHidden.value = valLimpo;
+    DevolucaoState.logistica.filialBraspress = valLimpo;
+
+    if (!valLimpo) {
+        if (lblTrigger) lblTrigger.textContent = "Selecione ou busque uma filial Braspress...";
+        if (sublblTrigger) {
+            sublblTrigger.textContent = "";
+            sublblTrigger.classList.add("hidden");
+        }
+        if (containerOutra) containerOutra.classList.add("hidden");
+        return;
+    }
+
+    if (valLimpo === "outra") {
+        if (lblTrigger) lblTrigger.textContent = "Outra filial / Digitar endereço manualmente";
+        if (sublblTrigger) {
+            sublblTrigger.textContent = "Informe o endereço completo abaixo";
+            sublblTrigger.classList.remove("hidden");
+        }
+        if (containerOutra) containerOutra.classList.remove("hidden");
+    } else {
+        if (containerOutra) containerOutra.classList.add("hidden");
+        
+        // Tenta achar o objeto da filial
+        const f = dadosOpcionais || BRASPRESS_FILIAIS.find(fil => 
+            `${fil.cidade} - ${fil.nomeFantasia} (${fil.sigla}) / ${fil.uf}` === valLimpo ||
+            valLimpo.includes(`(${fil.sigla})`)
+        );
+
+        if (f) {
+            if (lblTrigger) lblTrigger.textContent = `[${f.uf}] ${f.cidade} — ${f.nomeFantasia} (${f.sigla})`;
+            if (sublblTrigger) {
+                sublblTrigger.textContent = `${f.logradouro}, ${f.logNumero} - ${f.bairro || ''} (Tel: ${f.fone || 'N/A'})`;
+                sublblTrigger.classList.remove("hidden");
+            }
+        } else {
+            if (lblTrigger) lblTrigger.textContent = valLimpo;
+            if (sublblTrigger) sublblTrigger.classList.add("hidden");
+        }
+    }
+
+    // Marca item selecionado no menu
+    document.querySelectorAll("#options-filial-braspress .custom-select-option").forEach(opt => {
+        const isSel = opt.dataset.value === valLimpo;
+        opt.classList.toggle("is-selected", isSel);
+        const checkIcon = opt.querySelector(".fa-check");
+        if (checkIcon) {
+            checkIcon.classList.toggle("opacity-100", isSel);
+            checkIcon.classList.toggle("opacity-0", !isSel);
+        }
+    });
+
+    // Fecha o menu
+    if (container) container.classList.remove("open");
+    if (menu) menu.classList.add("hidden");
+}
+
+export function initCustomSelectFiliais() {
+    const container = document.getElementById("custom-select-filial-container");
+    const trigger = document.getElementById("trigger-filial-braspress");
+    const menu = document.getElementById("menu-filial-braspress");
+    const searchInput = document.getElementById("search-input-filial-braspress");
+    const optionsContainer = document.getElementById("options-filial-braspress");
+    const countEl = document.getElementById("count-filiais-braspress");
+
+    if (!container || !trigger || !menu || !optionsContainer) return;
+
+    // Renderiza lista de opções formatadas em 2 linhas
+    function renderOpcoesFiliais(filtro = "") {
+        const t = filtro.toLowerCase().trim();
+        const filiaisFiltradas = BRASPRESS_FILIAIS.filter(f => {
+            if (!t) return true;
+            const fullStr = `${f.cidade} ${f.nomeFantasia} ${f.sigla} ${f.uf} ${f.logradouro} ${f.bairro}`.toLowerCase();
+            return fullStr.includes(t);
+        });
+
+        if (countEl) {
+            countEl.textContent = `${filiaisFiltradas.length} unidade(s)`;
+        }
+
+        let html = filiaisFiltradas.map(f => {
+            const optVal = `${f.cidade} - ${f.nomeFantasia} (${f.sigla}) / ${f.uf}`;
+            const isSelected = DevolucaoState.logistica.filialBraspress === optVal;
+
+            return `
+                <div class="custom-select-option ${isSelected ? 'is-selected' : ''}" data-value="${optVal}" data-sigla="${f.sigla}">
+                    <div class="min-w-0 flex-1">
+                        <!-- Linha 1: Título da Filial em negrito -->
+                        <div class="opt-title text-xs font-bold text-slate-800 flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 bg-slate-100 text-[#008497] font-mono text-[10px] font-bold rounded border border-slate-200">${f.uf}</span>
+                            <span class="truncate">${f.cidade} — ${f.nomeFantasia} (${f.sigla})</span>
+                        </div>
+                        <!-- Linha 2: Endereço completo em cinza -->
+                        <div class="text-[11px] text-slate-500 font-normal mt-0.5 truncate">
+                            <i class="fa-solid fa-location-dot text-[10px] text-slate-400 mr-1"></i>${f.logradouro}, ${f.logNumero} - ${f.bairro || ''}
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-check text-xs text-[#008497] ${isSelected ? 'opacity-100' : 'opacity-0'} shrink-0"></i>
+                </div>
+            `;
+        }).join("");
+
+        // Opção "Outra filial" ao final
+        const isOutraSel = DevolucaoState.logistica.filialBraspress === "outra";
+        html += `
+            <div class="custom-select-option bg-slate-50/70 border-t border-slate-200 ${isOutraSel ? 'is-selected' : ''}" data-value="outra">
+                <div class="min-w-0 flex-1">
+                    <div class="opt-title text-xs font-bold text-[#008497] flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        <span>Outra filial / Digitar endereço manualmente</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-normal mt-0.5">
+                        Selecione caso a base desejada não esteja na lista
+                    </div>
+                </div>
+                <i class="fa-solid fa-check text-xs text-[#008497] ${isOutraSel ? 'opacity-100' : 'opacity-0'} shrink-0"></i>
+            </div>
+        `;
+
+        if (filiaisFiltradas.length === 0) {
+            html = `
+                <div class="p-6 text-center text-slate-400 text-xs">
+                    <i class="fa-solid fa-magnifying-glass text-xl mb-1 text-slate-300"></i>
+                    <p class="font-medium text-slate-600">Nenhuma filial encontrada para "${filtro}".</p>
+                </div>
+            ` + html;
+        }
+
+        optionsContainer.innerHTML = html;
+    }
+
+    if (!_filiaisCustomSelectInitialized) {
+        _filiaisCustomSelectInitialized = true;
+
+        // Toggle dropdown open/close
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = container.classList.contains("open");
+            if (isOpen) {
+                container.classList.remove("open");
+                menu.classList.add("hidden");
+                trigger.setAttribute("aria-expanded", "false");
+            } else {
+                // Fecha outros menus abertos
+                document.querySelectorAll('.dropdown-acoes-menu.show').forEach(m => m.classList.remove('show'));
+                container.classList.add("open");
+                menu.classList.remove("hidden");
+                trigger.setAttribute("aria-expanded", "true");
+                renderOpcoesFiliais(searchInput?.value || "");
+                setTimeout(() => searchInput?.focus(), 50);
+            }
+        });
+
+        // Filtragem por digitação no search input
+        searchInput?.addEventListener("input", (e) => {
+            renderOpcoesFiliais(e.target.value);
+        });
+
+        // Clique em uma opção
+        optionsContainer.addEventListener("click", (e) => {
+            const opt = e.target.closest(".custom-select-option");
+            if (!opt) return;
+            const val = opt.dataset.value;
+            const sigla = opt.dataset.sigla;
+            const fObj = sigla ? BRASPRESS_FILIAIS.find(f => f.sigla === sigla) : null;
+            selecionarFilialBraspress(val, fObj);
+        });
+
+        // Fecha ao clicar fora
+        document.addEventListener("click", (e) => {
+            if (!container.contains(e.target)) {
+                container.classList.remove("open");
+                menu.classList.add("hidden");
+                trigger.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        // Fecha com tecla ESC
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && container.classList.contains("open")) {
+                container.classList.remove("open");
+                menu.classList.add("hidden");
+                trigger.setAttribute("aria-expanded", "false");
+                trigger.focus();
+            }
+        });
+    }
+
+    renderOpcoesFiliais(searchInput?.value || "");
+}
+
+/**
+ * ETAPA 3: Renderização de Logística
+ */
 function renderEtapa3Logistica() {
     const tipo = DevolucaoState.logistica.tipo;
 
@@ -780,16 +988,9 @@ function renderEtapa3Logistica() {
     document.getElementById("container-braspress-fields").classList.toggle("hidden", tipo !== "braspress");
     document.getElementById("container-regional-fields").classList.toggle("hidden", tipo !== "transportadora_regional");
 
-    // Popula filiais Braspress se estiver vazio (106 filiais oficiais)
-    const selectFiliais = document.getElementById("select-filial-braspress");
-    if (selectFiliais && selectFiliais.options.length <= 1) {
-        selectFiliais.innerHTML = '<option value="">-- Selecione a Filial Braspress de Referência --</option>' +
-            BRASPRESS_FILIAIS.map(f => {
-                const optVal = `${f.cidade} - ${f.nomeFantasia} (${f.sigla}) / ${f.uf}`;
-                const optText = `[${f.uf}] ${f.cidade} — ${f.nomeFantasia} (${f.sigla}) | ${f.logradouro}, ${f.logNumero}`;
-                return `<option value="${optVal}" data-sigla="${f.sigla}">${optText}</option>`;
-            }).join("") + '<option value="outra">Outra filial (digitar endereço)</option>';
-    }
+    // Inicializa e atualiza componente customizado de seleção de Filial Braspress
+    initCustomSelectFiliais();
+    selecionarFilialBraspress(DevolucaoState.logistica.filialBraspress || "São Paulo - Matriz/Vila Maria (SP)");
 
     // Sincroniza campos regionais
     const reg = DevolucaoState.logistica.transportadoraRegional;
@@ -1609,23 +1810,9 @@ function initEventListeners() {
 
         if (cardResultado) cardResultado.classList.remove("hidden");
 
-        // Seleciona automaticamente a filial recomendada no select
-        const selectFiliais = document.getElementById("select-filial-braspress");
-        if (selectFiliais) {
-            let foundIndex = -1;
-            for (let i = 0; i < selectFiliais.options.length; i++) {
-                const optText = selectFiliais.options[i].text;
-                if (optText.includes(`(${f.sigla})`)) {
-                    foundIndex = i;
-                    break;
-                }
-            }
-
-            if (foundIndex !== -1) {
-                selectFiliais.selectedIndex = foundIndex;
-                DevolucaoState.logistica.filialBraspress = selectFiliais.options[foundIndex].value;
-            }
-        }
+        // Seleciona automaticamente a filial recomendada no dropdown customizado
+        const optVal = `${f.cidade} - ${f.nomeFantasia} (${f.sigla}) / ${f.uf}`;
+        selecionarFilialBraspress(optVal, f);
 
         showToast(`Filial Braspress ${f.nomeFantasia} (${f.sigla}) identificada como a mais próxima!`, "success");
     }
