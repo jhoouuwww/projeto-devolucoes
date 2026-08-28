@@ -1208,7 +1208,9 @@ async function renderHistorico() {
             <tr class="hover:bg-slate-50/80 transition-colors">
                 <!-- 1. ID / Protocolo -->
                 <td class="whitespace-nowrap">
-                    <span class="font-semibold text-[#0f172a] text-xs">${sol.protocolo || "-"}</span>
+                    <span class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')" title="Clique para ver detalhes">
+                        <i class="fa-solid fa-eye text-[10px] opacity-70"></i> ${sol.protocolo || "-"}
+                    </span>
                 </td>
 
                 <!-- 2. Data Registro -->
@@ -1237,8 +1239,8 @@ async function renderHistorico() {
                         </div>
                         <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.filialBraspress || "Filial não informada"}</div>
                     ` : `
-                        <div class="font-semibold text-amber-700 flex items-center gap-1.5 text-xs">
-                            <i class="fa-solid fa-truck-ramp-box text-amber-600"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
+                        <div class="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
                         </div>
                         <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.cidadeOrigem || ""} ${sol.logistica?.ufOrigem ? '(' + sol.logistica.ufOrigem + ')' : ''}</div>
                     `}
@@ -1256,7 +1258,7 @@ async function renderHistorico() {
                 <td class="whitespace-nowrap">
                     <div class="menu-acoes-container">
                         <!-- Botão de Ação -->
-                        <button class="btn-acoes-toggle" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
+                        <button class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
                             <i class="fa-solid fa-ellipsis text-xs text-slate-700"></i>
                             <span>Ações</span>
                             <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
@@ -1264,11 +1266,11 @@ async function renderHistorico() {
                     
                         <!-- Lista / Menu Dropdown Dinâmico -->
                         <div class="dropdown-acoes-menu" id="dropdown-${sol.id || sol.protocolo}">
-                            <button class="dropdown-item" data-action="view" data-id="${sol.id || sol.protocolo}">
-                                <i class="fa-solid fa-eye text-xs text-slate-500"></i>
+                            <button class="dropdown-item cursor-pointer" data-action="view" data-id="${sol.id || sol.protocolo}" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')">
+                                <i class="fa-solid fa-eye text-xs text-[#008497]"></i>
                                 <span>Visualizar Detalhes</span>
                             </button>
-                            <button class="dropdown-item" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                            <button class="dropdown-item cursor-pointer" data-action="edit" data-id="${sol.id || sol.protocolo}">
                                 <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
                                 <span>Editar Solicitação</span>
                             </button>
@@ -1399,7 +1401,9 @@ function _filtrarERenderizarAdmGeral() {
                 <tr class="hover:bg-slate-50/80 transition-colors">
                     <!-- 1. ID / Protocolo (Minimalista Padrão Passagens) -->
                     <td class="whitespace-nowrap">
-                        <span class="font-semibold text-[#0f172a] text-xs">${sol.protocolo || "-"}</span>
+                        <span class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')" title="Clique para ver detalhes">
+                            <i class="fa-solid fa-eye text-[10px] opacity-70"></i> ${sol.protocolo || "-"}
+                        </span>
                     </td>
 
                     <!-- 2. Data Registro -->
@@ -1435,8 +1439,8 @@ function _filtrarERenderizarAdmGeral() {
                             </div>
                             <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.filialBraspress || "Filial não informada"}</div>
                         ` : `
-                            <div class="font-semibold text-amber-700 flex items-center gap-1.5 text-xs">
-                                <i class="fa-solid fa-truck-ramp-box text-amber-600"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
+                            <div class="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
+                                <i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
                             </div>
                             <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.cidadeOrigem || ""} ${sol.logistica?.ufOrigem ? '(' + sol.logistica.ufOrigem + ')' : ''}</div>
                         `}
@@ -1454,7 +1458,7 @@ function _filtrarERenderizarAdmGeral() {
                     <td class="whitespace-nowrap">
                         <div class="menu-acoes-container">
                             <!-- Botão de Ação -->
-                            <button class="btn-acoes-toggle" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
+                            <button class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
                                 <i class="fa-solid fa-ellipsis text-xs text-slate-700"></i>
                                 <span>Ações</span>
                                 <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
@@ -1462,11 +1466,11 @@ function _filtrarERenderizarAdmGeral() {
 
                             <!-- Lista / Menu Dropdown Dinâmico -->
                             <div class="dropdown-acoes-menu" id="dropdown-${sol.id || sol.protocolo}">
-                                <button class="dropdown-item" data-action="view" data-id="${sol.id || sol.protocolo}">
-                                    <i class="fa-solid fa-eye text-xs text-slate-500"></i>
+                                <button class="dropdown-item cursor-pointer" data-action="view" data-id="${sol.id || sol.protocolo}" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')">
+                                    <i class="fa-solid fa-eye text-xs text-[#008497]"></i>
                                     <span>Visualizar Detalhes</span>
                                 </button>
-                                <button class="dropdown-item" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                                <button class="dropdown-item cursor-pointer" data-action="edit" data-id="${sol.id || sol.protocolo}">
                                     <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
                                     <span>Editar Solicitação</span>
                                 </button>
@@ -2210,16 +2214,22 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
     }
 
     modal.classList.remove("hidden");
-    modal.style.display = "flex";
+    modal.style.setProperty("display", "flex", "important");
+    modal.style.zIndex = "99999";
 }
 
 export function fecharModalDetalhesSolicitacao() {
     const modal = document.getElementById("modal-detalhes-solicitacao");
     if (modal) {
         modal.classList.add("hidden");
-        modal.style.display = "none";
+        modal.style.setProperty("display", "none", "important");
     }
 }
+
+// Garante disponibilidade global imediata para todos os navegadores e eventos
+window.appVerDetalhesSolicitacao = abrirModalDetalhesSolicitacao;
+window.abrirModalDetalhesSolicitacao = abrirModalDetalhesSolicitacao;
+window.fecharModalDetalhesSolicitacao = fecharModalDetalhesSolicitacao;
 
 function prepararEImprimirProtocolo(sol) {
     const printSection = document.getElementById("print-protocol-content");
