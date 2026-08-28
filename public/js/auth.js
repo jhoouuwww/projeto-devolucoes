@@ -200,6 +200,7 @@ async function processarUsuarioLogado(firebaseUser) {
     const protheusCode = vinculo?.protheus || "99999";
     const nomeOficial = (vinculo && vinculo.nome) ? vinculo.nome : (firebaseUser.displayName || cleanUser.replace(/[._-]/g, " "));
     const filialOficial = vinculo?.filial || "01 - Matriz";
+    const cargoOficial = vinculo?.cargo || "Promotor Técnico";
     const isAdminUser = email === "j_melgaco@makita.com.br" || cleanUser === "j_melgaco" || cleanUser === "88901";
 
     AuthState.user = firebaseUser;

@@ -258,14 +258,29 @@ export function renderMiniRelatorioAtivos() {
  * Atualização Geral da Interface baseada no AuthState
  */
 function updateAuthUI() {
-    const authContainer = document.getElementById("auth-container");
+    const loginScreen   = document.getElementById("login-screen");
+    const loginLoading  = document.getElementById("login-loading");
     const blockScreen   = document.getElementById("block-screen");
     const appContainer  = document.getElementById("app-container");
     const appHeader     = document.getElementById("app-header");
     const appMain       = document.getElementById("app-main");
+    const btnLoginMs    = document.getElementById("btn-seguinte");
+
+    if (btnLoginMs) {
+        btnLoginMs.disabled = false;
+        btnLoginMs.innerHTML = "Seguinte";
+    }
+    if (loginLoading) {
+        loginLoading.classList.add("hidden");
+        loginLoading.style.display = "none";
+    }
 
     if (!AuthState.user) {
-        // Usuário deslogado → Renderiza Tela de Login Microsoft Dinâmica
+        // Usuário deslogado → Exibe Tela de Login Microsoft Original
+        if (loginScreen) {
+            loginScreen.classList.remove("hidden");
+            loginScreen.style.display = "flex";
+        }
         if (appContainer) {
             appContainer.classList.add("hidden");
             appContainer.style.display = "none";
@@ -278,63 +293,19 @@ function updateAuthUI() {
             appMain.classList.add("hidden");
             appMain.style.display = "none";
         }
-        if (authContainer) {
-            authContainer.innerHTML = `
-                <div id="login-screen" class="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 bg-[#f2f4f6]" 
-                     style="background-image: url('https://aadcdn.msauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696895f78c19df6c717586a5d.svg'); background-size: cover; background-position: center;">
-
-                    <div class="bg-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] max-w-[440px] w-full p-8 sm:p-11 space-y-4">
-                        <div class="flex items-center mb-6">
-                            <svg class="w-6 h-6 mr-2" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-                            </svg>
-                            <span class="text-[#737373] font-semibold text-[15px]">Microsoft</span>
-                        </div>
-
-                        <h2 class="text-[24px] font-semibold text-[#1b1b1b] mb-2 tracking-tight">Iniciar sessão</h2>
-                        <p id="login-error" class="text-[#e81123] text-[13px] hidden mb-2"></p>
-
-                        <div class="pt-2">
-                            <input type="email" id="login-email" placeholder="E-mail, telefone ou Skype" 
-                                   class="w-full text-[15px] outline-none transition-all placeholder:text-[#666] border-0 border-b border-black focus:border-b-2 focus:border-[#0067b8] pb-1.5 bg-transparent">
-                        </div>
-
-                        <div class="pt-2 space-y-3">
-                            <a href="#" onclick="return false;" class="text-[13px] text-[#0067b8] hover:text-[#333] hover:underline block">Nenhuma conta? Crie uma!</a>
-                            <a href="#" onclick="return false;" class="text-[13px] text-[#0067b8] hover:text-[#333] hover:underline block">Não consegue aceder à sua conta?</a>
-                        </div>
-
-                        <div class="flex justify-end space-x-1 pt-8">
-                            <button disabled class="bg-[#cccccc] text-[#666666] px-8 py-1.5 text-[15px] cursor-not-allowed min-w-[108px]">
-                                Anterior
-                            </button>
-                            <button id="btn-seguinte" type="button" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-1.5 text-[15px] transition-colors shadow-sm cursor-pointer min-w-[108px] flex justify-center items-center">
-                                Seguinte
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById("btn-seguinte")?.addEventListener("click", (e) => {
-                e.preventDefault();
-                handleMsLogin();
-            });
-            document.getElementById("login-email")?.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleMsLogin();
-                }
-            });
+        if (blockScreen) {
+            blockScreen.classList.add("hidden");
+            blockScreen.style.display = "none";
         }
         return;
     }
 
     if (!AuthState.isAuthorized) {
         // Logado porém SEM código Protheus ou domínio inválido → Tela de bloqueio
-        if (authContainer) authContainer.innerHTML = "";
+        if (loginScreen) {
+            loginScreen.classList.add("hidden");
+            loginScreen.style.display = "none";
+        }
         if (blockScreen) {
             blockScreen.classList.remove("hidden");
             blockScreen.style.display = "flex";
@@ -362,7 +333,14 @@ function updateAuthUI() {
     }
 
     // Usuário autorizado e vinculado com sucesso!
-    if (authContainer) authContainer.innerHTML = "";
+    if (loginScreen) {
+        loginScreen.classList.add("hidden");
+        loginScreen.style.display = "none";
+    }
+    if (loginLoading) {
+        loginLoading.classList.add("hidden");
+        loginLoading.style.display = "none";
+    }
     if (blockScreen) {
         blockScreen.classList.add("hidden");
         blockScreen.style.display = "none";

@@ -9,9 +9,10 @@ service cloud.firestore {
               request.auth.token.email.matches('.*@makitabr[.]onmicrosoft[.]com$'));
     }
 
-    // 1. Coleção de Vínculos Protheus (usuarios_protheus)
+    // 1. Coleção de Vínculos Protheus: leitura aberta para validação de vínculo no login; escrita apenas para Makita
     match /usuarios_protheus/{document} {
-      allow read, write: if isMakitaUser();
+      allow read: if true;
+      allow write: if isMakitaUser();
     }
 
     // 2. Coleção de Solicitações de Devolução (solicitacoes_devolucao)
