@@ -2033,8 +2033,92 @@ window.addEventListener("scroll", () => {
     document.querySelectorAll('.dropdown-acoes-menu.show').forEach(m => m.classList.remove('show'));
 }, { passive: true });
 
+/**
+ * Detecção e Adaptação Multiplataforma (Desktop / Android / iOS)
+ */
+export function initDeviceAdaptations() {
+    const ua = navigator.userAgent || navigator.vendor || window.opera || "";
+    const platform = navigator.platform || "";
+    const maxTouchPoints = navigator.maxTouchPoints || 0;
+
+    let deviceType = "desktop";
+    let isIOS = false;
+    let isAndroid = false;
+
+    // 1. Detecção Precisa de iOS (iPhone, iPad, iPod, incluindo iPadOS que finge ser MacIntel)
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) || 
+                        (platform === "MacIntel" && maxTouchPoints > 1) ||
+                        (navigator.userAgentData?.platform === "iOS");
+
+    // 2. Detecção de Android
+    const isAndroidDevice = /android/i.test(ua) || (navigator.userAgentData?.platform === "Android");
+
+    if (isIOSDevice) {
+        deviceType = "ios";
+        isIOS = true;
+    } else if (isAndroidDevice) {
+        deviceType = "android";
+        isAndroid = true;
+    } else {
+        deviceType = "desktop";
+    }
+
+    // 3. Detecção de Recursos Touch
+    const isTouchDevice = maxTouchPoints > 0 || 
+                          'ontouchstart' in window || 
+                          (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+    // 4. Exposição de Variáveis Globais
+    window.deviceType = deviceType;
+    window.isIOS = isIOS;
+    window.isAndroid = isAndroid;
+    window.isMobile = (deviceType === "ios" || deviceType === "android");
+    window.isTouchDevice = isTouchDevice;
+
+    // 5. Adiciona classes ao HTML e BODY
+    const root = document.documentElement;
+    const body = document.body;
+
+    root.classList.remove("device-desktop", "device-android", "device-ios", "device-touch", "device-mobile");
+    root.classList.add(`device-${deviceType}`);
+    if (isTouchDevice) root.classList.add("device-touch");
+    if (window.isMobile) root.classList.add("device-mobile");
+
+    if (body) {
+        body.classList.remove("device-desktop", "device-android", "device-ios", "device-touch", "device-mobile");
+        body.classList.add(`device-${deviceType}`);
+        if (isTouchDevice) body.classList.add("device-touch");
+        if (window.isMobile) body.classList.add("device-mobile");
+    }
+
+    // 6. Cálculo da Altura Real da Viewport (100dvh fallback para Safari iOS e Chrome Android)
+    function updateAppHeight() {
+        const vh = window.innerHeight * 0.01;
+        root.style.setProperty('--vh', `${vh}px`);
+        root.style.setProperty('--app-height', `${window.innerHeight}px`);
+    }
+    updateAppHeight();
+    window.addEventListener('resize', updateAppHeight, { passive: true });
+    window.addEventListener('orientationchange', () => setTimeout(updateAppHeight, 200), { passive: true });
+
+    // 7. Prevenção de Teclado Virtual cobrindo Inputs (Android / iOS)
+    if (window.isMobile) {
+        document.addEventListener('focusin', (e) => {
+            const target = e.target;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        }, { passive: true });
+    }
+
+    console.log(`[DeviceAdaptation] Contexto Ativo: ${deviceType.toUpperCase()} | Touch: ${isTouchDevice}`);
+}
+
 // Inicialização Robusta
 async function bootApp() {
+    initDeviceAdaptations();
     window.handleMsLogin = handleMsLogin;
     initEventListeners();
     subscribeAuth(updateAuthUI);

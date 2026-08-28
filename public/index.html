@@ -2,11 +2,44 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Sistema de Devoluções — Makita do Brasil</title>
+
+    <!-- Script de Detecção Rápida Multiplataforma (Desktop / Android / iOS) -->
+    <script>
+        (function() {
+            try {
+                var ua = navigator.userAgent || navigator.vendor || window.opera || "";
+                var platform = navigator.platform || "";
+                var maxTouchPoints = navigator.maxTouchPoints || 0;
+                var deviceType = "desktop";
+
+                if (/iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1) || (navigator.userAgentData && navigator.userAgentData.platform === "iOS")) {
+                    deviceType = "ios";
+                } else if (/android/i.test(ua) || (navigator.userAgentData && navigator.userAgentData.platform === "Android")) {
+                    deviceType = "android";
+                }
+
+                var isTouch = maxTouchPoints > 0 || 'ontouchstart' in window;
+                window.deviceType = deviceType;
+                window.isTouchDevice = isTouch;
+                window.isMobile = (deviceType === "ios" || deviceType === "android");
+
+                var docEl = document.documentElement;
+                docEl.classList.add("device-" + deviceType);
+                if (isTouch) docEl.classList.add("device-touch");
+                if (window.isMobile) docEl.classList.add("device-mobile");
+
+                var vh = window.innerHeight * 0.01;
+                docEl.style.setProperty('--vh', vh + 'px');
+            } catch (e) {
+                console.error("Device detection init error:", e);
+            }
+        })();
+    </script>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,8 +68,8 @@
     <!-- SheetJS para Leitura Direta de Arquivos .XLSX / .XLS no Navegador -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- Estilos Customizados -->
-    <link rel="stylesheet" href="./css/styles.css?v=20260828_115900">
+    <!-- Estilos Customizados Multiplataforma -->
+    <link rel="stylesheet" href="./css/styles.css?v=20260828_122700">
 </head>
 <body class="bg-[#f1f5f9] font-sans text-slate-800 antialiased min-h-screen flex flex-col">
 
@@ -1167,6 +1200,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_122100"></script>
+    <script type="module" src="./js/app.js?v=20260828_122700"></script>
 </body>
 </html>

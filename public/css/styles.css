@@ -23,16 +23,32 @@
     to { opacity: 1; transform: scale(1); }
 }
 
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --app-height: 100vh;
+}
+
 /* Base da Página */
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f1f5f9;
     margin: 0;
     padding: 0;
+    padding-top: var(--sat);
+    padding-bottom: var(--sab);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
     color: #0f172a;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .font-mono {
@@ -564,5 +580,115 @@ input[type="text"].input-search-icon,
         background: white;
     }
     .no-print { display: none !important; }
+}
+
+/* ==========================================================================
+   ADAPTAÇÕES RESPONSIVAS MULTIPLATAFORMA (DESKTOP / ANDROID / IOS)
+   ========================================================================== */
+
+/* 1. Suporte Touch e Mobile Geral (Android + iOS) */
+.device-touch,
+.device-mobile {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.device-touch button,
+.device-touch a,
+.device-touch input,
+.device-touch select,
+.device-touch .btn-primary,
+.device-touch .btn-secondary,
+.device-touch .dropdown-item {
+    touch-action: manipulation;
+    min-height: 40px; /* Área de toque confortável */
+}
+
+/* Tabelas com rolagem suave no mobile e proteção de quebra de layout */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    border-radius: 8px;
+}
+
+/* 2. Regras Específicas para iOS (iPhone / iPad / Safari) */
+.device-ios input[type="text"],
+.device-ios input[type="email"],
+.device-ios input[type="number"],
+.device-ios input[type="date"],
+.device-ios input[type="search"],
+.device-ios select,
+.device-ios textarea {
+    /* Previne zoom automático indesejado no foco do Safari iOS */
+    font-size: 16px !important;
+    border-radius: 8px;
+    -webkit-appearance: none;
+}
+
+.device-ios select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+}
+
+/* 3. Regras Específicas para Android */
+.device-android input[type="date"] {
+    min-height: 42px;
+}
+
+/* 4. Ajustes Responsivos para Telas Pequenas (< 768px) */
+@media screen and (max-width: 768px) {
+    /* Inputs no mobile sempre com tamanho mínimo de fonte de 16px */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="date"],
+    input[type="search"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Modal de Detalhes em Mobile (Ajuste de Tela Cheia com Safe Area) */
+    #modal-detalhes-solicitacao {
+        padding: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    #modal-detalhes-solicitacao > div {
+        max-height: 92dvh !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        padding-bottom: max(16px, var(--sab)) !important;
+        width: 100% !important;
+    }
+
+    /* Dropdown de Ações no Mobile: Alinhamento Central e Touch Seguro */
+    .dropdown-acoes-menu {
+        position: fixed !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: calc(100vw - 32px) !important;
+        max-width: 320px !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+        z-index: 9999 !important;
+    }
+
+    /* Ajuste de Padding do Container Principal no Mobile */
+    main#app-main {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        padding-top: 16px !important;
+        padding-bottom: max(24px, var(--sab)) !important;
+    }
+
+    /* Cabeçalho do App em Telas Pequenas */
+    #app-header {
+        padding-left: max(12px, var(--sal)) !important;
+        padding-right: max(12px, var(--sar)) !important;
+    }
 }
 
