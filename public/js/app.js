@@ -1809,17 +1809,23 @@ export async function handleMsLogin() {
     const inputEl      = document.getElementById("login-email") || document.getElementById("login-email-ms");
     const btnEl        = document.getElementById("btn-seguinte") || document.getElementById("btn-login-ms");
     const loginErrorEl = document.getElementById("login-error");
+    const loginLoading = document.getElementById("login-loading");
 
     function showLoginErr(msg) {
+        console.warn("[Makita Login] Erro na validação:", msg);
         if (btnEl) {
             btnEl.disabled = false;
             btnEl.innerHTML = "Seguinte";
+        }
+        if (loginLoading) {
+            loginLoading.classList.add("hidden", "pointer-events-none");
+            loginLoading.style.setProperty("display", "none", "important");
         }
         if (loginErrorEl) {
             loginErrorEl.textContent = msg;
             loginErrorEl.classList.remove("hidden");
             loginErrorEl.style.removeProperty("display");
-            loginErrorEl.style.display = "block";
+            loginErrorEl.style.setProperty("display", "block", "important");
         }
         if (inputEl) inputEl.style.setProperty("border-bottom", "2px solid #e81123", "important");
     }
@@ -1827,7 +1833,7 @@ export async function handleMsLogin() {
         if (loginErrorEl) {
             loginErrorEl.textContent = "";
             loginErrorEl.classList.add("hidden");
-            loginErrorEl.style.display = "none";
+            loginErrorEl.style.setProperty("display", "none", "important");
         }
         if (inputEl) inputEl.style.removeProperty("border-bottom");
     }
@@ -1843,6 +1849,7 @@ export async function handleMsLogin() {
     }
 
     const term = (inputEl?.value || "").trim().toLowerCase();
+    console.log("[Makita Login] Clique / Enter detectado no login. Termo digitado:", term);
     clearLoginErr();
 
     if (!term) {
@@ -1854,7 +1861,9 @@ export async function handleMsLogin() {
     setBtnLoading(true);
 
     try {
+        console.log("[Makita Login] Buscando vínculo Protheus para:", term);
         const vinculo = await buscarVinculoProtheus(term);
+        console.log("[Makita Login] Resultado do vínculo:", vinculo);
 
         if (!vinculo) {
             setBtnLoading(false);
@@ -1863,10 +1872,12 @@ export async function handleMsLogin() {
         }
 
         const loginUser = vinculo.email || (term.includes("@") ? term : `${term}@makita.com.br`);
+        console.log("[Makita Login] Realizando login simulado para:", loginUser);
         await simularLogin(loginUser);
+        console.log("[Makita Login] Login simulado concluído com sucesso!");
 
     } catch (err) {
-        console.error("Erro ao verificar acesso:", err);
+        console.error("[Makita Login] Erro inesperado ao verificar acesso:", err);
         setBtnLoading(false);
         showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
     } finally {
