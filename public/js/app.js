@@ -300,6 +300,20 @@ function updateAuthUI() {
             blockScreen.classList.add("hidden");
             blockScreen.style.display = "none";
         }
+
+        const loginErrorEl = document.getElementById("login-error");
+        if (loginErrorEl) {
+            if (AuthState.errorMessage) {
+                loginErrorEl.textContent = AuthState.errorMessage;
+                loginErrorEl.classList.remove("hidden");
+                loginErrorEl.style.removeProperty("display");
+                loginErrorEl.style.display = "block";
+            } else {
+                loginErrorEl.textContent = "";
+                loginErrorEl.classList.add("hidden");
+                loginErrorEl.style.display = "none";
+            }
+        }
         return;
     }
 
@@ -1787,6 +1801,8 @@ export async function handleMsLogin() {
         if (loginErrorEl) {
             loginErrorEl.textContent = msg;
             loginErrorEl.classList.remove("hidden");
+            loginErrorEl.style.removeProperty("display");
+            loginErrorEl.style.display = "block";
         }
         if (inputEl) inputEl.style.setProperty("border-bottom", "2px solid #e81123", "important");
     }
@@ -1794,6 +1810,7 @@ export async function handleMsLogin() {
         if (loginErrorEl) {
             loginErrorEl.textContent = "";
             loginErrorEl.classList.add("hidden");
+            loginErrorEl.style.display = "none";
         }
         if (inputEl) inputEl.style.removeProperty("border-bottom");
     }
@@ -1812,7 +1829,7 @@ export async function handleMsLogin() {
     clearLoginErr();
 
     if (!term) {
-        showLoginErr("Insira um endereço de e-mail.");
+        showLoginErr("Insira um endereço de e-mail corporativo ou código Protheus.");
         inputEl?.focus();
         return;
     }
@@ -1824,7 +1841,7 @@ export async function handleMsLogin() {
 
         if (!vinculo) {
             setBtnLoading(false);
-            showLoginErr(`O utilizador "${term}" não está autorizado a aceder ao sistema.`);
+            showLoginErr(`O utilizador "${term}" não foi encontrado na base autorizada da Makita.`);
             return;
         }
 
@@ -1835,6 +1852,13 @@ export async function handleMsLogin() {
         console.error("Erro ao verificar acesso:", err);
         setBtnLoading(false);
         showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
+    } finally {
+        setTimeout(() => {
+            if (!AuthState.user && btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = "Seguinte";
+            }
+        }, 3500);
     }
 }
 

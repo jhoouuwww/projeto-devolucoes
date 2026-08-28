@@ -52,9 +52,8 @@ export async function buscarVinculoProtheus(inputStr) {
     if (!inputStr) return null;
     const rawTerm = inputStr.toLowerCase().trim();
     const cleanUser = rawTerm.split("@")[0].trim();
-    const term = rawTerm.includes("@") && !rawTerm.endsWith(".com.br") && !rawTerm.endsWith(".onmicrosoft.com")
-        ? `${cleanUser}@makita.com.br`
-        : rawTerm;
+    const emailWithDomain = rawTerm.includes("@") ? rawTerm : `${cleanUser}@makita.com.br`;
+    const term = emailWithDomain;
 
     // 1. Tenta buscar na Base Local (VINCULOS_INICIAIS) primeiro (Instantâneo / 0ms)
     for (const [k, v] of Object.entries(VINCULOS_INICIAIS)) {
@@ -63,7 +62,17 @@ export async function buscarVinculoProtheus(inputStr) {
         const protheusCode = String(v.protheus || "").trim();
         const nomeUser = (v.nome || "").toLowerCase().trim();
 
-        if (term === emailUser || cleanUser === username || term === username || term === protheusCode || term === nomeUser || (term.length >= 3 && nomeUser.includes(term)) || (cleanUser.length >= 3 && nomeUser.includes(cleanUser))) {
+        if (
+            term === emailUser || 
+            rawTerm === emailUser || 
+            cleanUser === username || 
+            rawTerm === username || 
+            rawTerm === protheusCode || 
+            cleanUser === protheusCode || 
+            rawTerm === nomeUser || 
+            (rawTerm.length >= 3 && nomeUser.includes(rawTerm)) || 
+            (cleanUser.length >= 3 && nomeUser.includes(cleanUser))
+        ) {
             return {
                 protheus: v.protheus,
                 nome: v.nome,
@@ -76,7 +85,15 @@ export async function buscarVinculoProtheus(inputStr) {
     }
 
     // 2. Fallback Admin conhecido em memória
-    if (ADMIN_EMAILS.includes(term) || ADMIN_EMAILS.includes(cleanUser) || cleanUser === "j_melgaco" || cleanUser === "88901" || cleanUser.includes("melgaco") || cleanUser.includes("jonathan")) {
+    if (
+        ADMIN_EMAILS.includes(term) || 
+        ADMIN_EMAILS.includes(cleanUser) || 
+        cleanUser === "j_melgaco" || 
+        cleanUser === "88901" || 
+        cleanUser === "admin" ||
+        cleanUser.includes("melgaco") || 
+        cleanUser.includes("jonathan")
+    ) {
         return {
             protheus: "88901",
             nome: "Jonathan Melgaço",
@@ -87,108 +104,115 @@ export async function buscarVinculoProtheus(inputStr) {
         };
     }
 
-    // 3. Se não encontrou na base local, busca no Firestore (Coleções 'usuarios_protheus', 'usuarios_app', 'vinculos_usuarios', 'promotores')
+    // 3. Busca no Firestore em paralelo com tratamento individual de exceção
     try {
         const firestorePromise = (async () => {
-            // 3a. Busca direta por ID em usuarios_protheus
-            const docRef = doc(db, "usuarios_protheus", term);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                return {
-                    protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
-                    filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Promotor Técnico",
-                    isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
-                    email: data.email || term
-                };
-            }
+            const checks = [
+                // 3a. Busca direta por ID em usuarios_protheus
+                (async () => {
+                    try {
+                        const snap = await getDoc(doc(db, "usuarios_protheus", emailWithDomain));
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            return {
+                                protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
+                                nome: data.nome || data.nomeCompleto || cleanUser.replace(/[._-]/g, " "),
+                                filial: data.filial || "01 - Matriz",
+                                cargo: data.cargo || "Promotor Técnico",
+                                isAdmin: ADMIN_EMAILS.includes(emailWithDomain) || !!data.isAdmin,
+                                email: data.email || emailWithDomain
+                            };
+                        }
+                    } catch (e) {}
+                    return null;
+                })(),
 
-            // 3b. Busca direta por ID (código protheus) em usuarios_app
-            const docAppRef = doc(db, "usuarios_app", term);
-            const docAppSnap = await getDoc(docAppRef);
-            if (docAppSnap.exists()) {
-                const data = docAppSnap.data();
-                const userEmail = data.email || `${term}@makita.com.br`;
-                return {
-                    protheus: String(data.codigoProtheus || term).trim(),
-                    nome: data.nome || userEmail.split("@")[0].replace(/[._-]/g, " "),
-                    filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Promotor Técnico",
-                    isAdmin: ADMIN_EMAILS.includes(userEmail),
-                    email: userEmail
-                };
-            }
+                // 3b. Busca direta por ID (código protheus) em usuarios_app
+                (async () => {
+                    try {
+                        const snap = await getDoc(doc(db, "usuarios_app", cleanUser));
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            const userEmail = data.email || emailWithDomain;
+                            return {
+                                protheus: String(data.codigoProtheus || cleanUser).trim(),
+                                nome: data.nome || userEmail.split("@")[0].replace(/[._-]/g, " "),
+                                filial: data.filial || "01 - Matriz",
+                                cargo: data.cargo || "Promotor Técnico",
+                                isAdmin: ADMIN_EMAILS.includes(userEmail),
+                                email: userEmail
+                            };
+                        }
+                    } catch (e) {}
+                    return null;
+                })(),
 
-            // 3c. Query em usuarios_app por email
-            const qApp = query(collection(db, "usuarios_app"), where("email", "==", term));
-            const qAppSnap = await getDocs(qApp);
-            if (!qAppSnap.empty) {
-                const data = qAppSnap.docs[0].data();
-                return {
-                    protheus: String(data.codigoProtheus || qAppSnap.docs[0].id).trim(),
-                    nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
-                    filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Promotor Técnico",
-                    isAdmin: ADMIN_EMAILS.includes(term),
-                    email: term
-                };
-            }
+                // 3c. Query em usuarios_app por email
+                (async () => {
+                    try {
+                        const q = query(collection(db, "usuarios_app"), where("email", "==", emailWithDomain));
+                        const snap = await getDocs(q);
+                        if (!snap.empty) {
+                            const data = snap.docs[0].data();
+                            return {
+                                protheus: String(data.codigoProtheus || snap.docs[0].id).trim(),
+                                nome: data.nome || cleanUser.replace(/[._-]/g, " "),
+                                filial: data.filial || "01 - Matriz",
+                                cargo: data.cargo || "Promotor Técnico",
+                                isAdmin: ADMIN_EMAILS.includes(emailWithDomain),
+                                email: data.email || emailWithDomain
+                            };
+                        }
+                    } catch (e) {}
+                    return null;
+                })(),
 
-            // 3d. Query em usuarios_protheus por email
-            const q1 = query(collection(db, "usuarios_protheus"), where("email", "==", term));
-            const qSnap1 = await getDocs(q1);
-            if (!qSnap1.empty) {
-                const data = qSnap1.docs[0].data();
-                return {
-                    protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
-                    filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Promotor Técnico",
-                    isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
-                    email: data.email || term
-                };
-            }
+                // 3d. Query em usuarios_protheus por email
+                (async () => {
+                    try {
+                        const q = query(collection(db, "usuarios_protheus"), where("email", "==", emailWithDomain));
+                        const snap = await getDocs(q);
+                        if (!snap.empty) {
+                            const data = snap.docs[0].data();
+                            return {
+                                protheus: String(data.protheus || data.codigoProtheus || "").trim(),
+                                nome: data.nome || data.nomeCompleto || cleanUser.replace(/[._-]/g, " "),
+                                filial: data.filial || "01 - Matriz",
+                                cargo: data.cargo || "Promotor Técnico",
+                                isAdmin: ADMIN_EMAILS.includes(emailWithDomain) || !!data.isAdmin,
+                                email: data.email || emailWithDomain
+                            };
+                        }
+                    } catch (e) {}
+                    return null;
+                })(),
 
-            // 3e. Query em vinculos_usuarios
-            try {
-                const qVinc = query(collection(db, "vinculos_usuarios"), where("email", "==", term));
-                const qVincSnap = await getDocs(qVinc);
-                if (!qVincSnap.empty) {
-                    const data = qVincSnap.docs[0].data();
-                    return {
-                        protheus: String(data.protheus || data.codigoProtheus || "").trim(),
-                        nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
-                        filial: data.filial || "01 - Matriz",
-                        cargo: data.cargo || "Promotor Técnico",
-                        isAdmin: ADMIN_EMAILS.includes(term),
-                        email: term
-                    };
-                }
-            } catch (e) {}
+                // 3e. Query em promotores
+                (async () => {
+                    try {
+                        const q = query(collection(db, "promotores"), where("email", "==", emailWithDomain));
+                        const snap = await getDocs(q);
+                        if (!snap.empty) {
+                            const data = snap.docs[0].data();
+                            return {
+                                protheus: String(data.protheus || data.codigoProtheus || snap.docs[0].id).trim(),
+                                nome: data.nome || cleanUser.replace(/[._-]/g, " "),
+                                filial: data.filial || "01 - Matriz",
+                                cargo: data.cargo || "Promotor Técnico",
+                                isAdmin: ADMIN_EMAILS.includes(emailWithDomain),
+                                email: data.email || emailWithDomain
+                            };
+                        }
+                    } catch (e) {}
+                    return null;
+                })()
+            ];
 
-            // 3f. Query em promotores
-            try {
-                const qProm = query(collection(db, "promotores"), where("email", "==", term));
-                const qPromSnap = await getDocs(qProm);
-                if (!qPromSnap.empty) {
-                    const data = qPromSnap.docs[0].data();
-                    return {
-                        protheus: String(data.protheus || data.codigoProtheus || "").trim(),
-                        nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
-                        filial: data.filial || "01 - Matriz",
-                        cargo: data.cargo || "Promotor Técnico",
-                        isAdmin: ADMIN_EMAILS.includes(term),
-                        email: term
-                    };
-                }
-            } catch (e) {}
-
-            return null;
+            const results = await Promise.all(checks);
+            return results.find(r => r && r.protheus) || null;
         })();
 
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 4000));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
         const resultadoFirestore = await Promise.race([firestorePromise, timeoutPromise]);
         if (resultadoFirestore && resultadoFirestore.protheus) {
             return resultadoFirestore;
