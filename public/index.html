@@ -196,6 +196,17 @@
                 </div>
             </div>
 
+            <!-- BANNER DE MODO DE EDIÇÃO -->
+            <div id="banner-modo-edicao" class="hidden p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2.5 text-amber-900 min-w-0">
+                    <i class="fa-solid fa-pen-to-square text-base text-amber-600 shrink-0"></i>
+                    <span class="truncate">Modo de Edição ativo para a solicitação <strong id="lbl-edicao-protocolo" class="font-mono text-amber-900 font-bold">DEV-2026-XXXX</strong>. Altere itens, volumes ou logística.</span>
+                </div>
+                <button type="button" id="btn-cancelar-edicao-banner" class="px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-lg border border-amber-300 shadow-2xs whitespace-nowrap cursor-pointer shrink-0">
+                    Cancelar Edição
+                </button>
+            </div>
+
             <!-- MINI RELATÓRIO DE ATIVOS (Dashboard KPI Cards) -->
             <div id="container-mini-relatorio" class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-xs">
                 <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -1136,8 +1147,12 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
             </div>
 
             <!-- Footer Modal -->
-            <div class="p-4 bg-white border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                <button id="btn-fechar-modal-detalhes-footer" class="btn-secondary">
+            <div class="p-4 bg-white border-t border-slate-200 flex justify-between items-center gap-2 shrink-0">
+                <button type="button" id="btn-editar-modal-detalhes" class="btn-primary flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Editar Solicitação</span>
+                </button>
+                <button type="button" id="btn-fechar-modal-detalhes-footer" class="btn-secondary">
                     Fechar
                 </button>
             </div>
@@ -1324,6 +1339,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_141400"></script>
+    <script type="module" src="./js/app.js?v=20260828_142300"></script>
 </body>
 </html>

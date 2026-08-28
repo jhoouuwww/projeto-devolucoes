@@ -329,6 +329,72 @@ export async function gravarSolicitacaoNoFirestore(payload) {
 }
 
 /**
+ * Atualiza uma solicitação de devolução existente no Firestore (Edição de Itens, Volumes, Logística, etc.)
+ */
+export async function atualizarSolicitacaoNoFirestore(id, payload) {
+    const documentoParaAtualizar = {
+        ultimaAtualizacao: new Date().toISOString(),
+        atualizadoEm: serverTimestamp(),
+        solicitante: {
+            email: payload.solicitante.email,
+            nome: payload.solicitante.nome,
+            protheus: payload.solicitante.protheus,
+            filial: payload.solicitante.filial || "01 - Matriz",
+            cargo: payload.solicitante.cargo || "Promotor Técnico"
+        },
+        itens: payload.itens.map(it => ({
+            id: it.id || `${it.notaFiscal}_${it.codigoItem}`,
+            codigoItem: it.codigoItem || it.produto || "",
+            descricao: it.descricao || "",
+            notaFiscal: it.notaFiscal || it.nfRemessa || "",
+            pedido: it.pedido || "",
+            quantidadeDevolvida: Number(it.quantidadeDevolvida || 1),
+            numeroSerie: it.numeroSerie || ""
+        })),
+        totalItens: payload.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0),
+        volumes: {
+            quantidadeCaixas: Number(payload.volumes.quantidadeCaixas),
+            pesoAproximadoKg: payload.volumes.pesoAproximadoKg ? Number(payload.volumes.pesoAproximadoKg) : null,
+            observacoesEmbalagem: payload.volumes.observacoesEmbalagem || ""
+        },
+        logistica: {
+            tipo: payload.logistica.tipo,
+            filialBraspress: payload.logistica.filialBraspress || null,
+            transportadoraRegional: payload.logistica.transportadoraRegional || null,
+            motivoEscolhaRegional: payload.logistica.motivoEscolhaRegional || "",
+            cidadeOrigem: payload.logistica.cidadeOrigem || "",
+            ufOrigem: payload.logistica.ufOrigem || ""
+        },
+        observacoesGerais: payload.observacoesGerais || ""
+    };
+
+    try {
+        if (!String(id).startsWith("local_")) {
+            const docRef = doc(db, "solicitacoes_devolucao", id);
+            await updateDoc(docRef, documentoParaAtualizar);
+        }
+
+        // Atualiza também no localStorage caso exista
+        const localDevolucoes = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
+        const index = localDevolucoes.findIndex(s => s.id === id || s.protocolo === id || s.protocolo === payload.protocolo);
+        if (index !== -1) {
+            localDevolucoes[index] = { ...localDevolucoes[index], ...documentoParaAtualizar };
+            localStorage.setItem("makita_devolucoes_locais", JSON.stringify(localDevolucoes));
+        }
+
+        return {
+            success: true,
+            id: id,
+            protocolo: payload.protocolo,
+            dados: documentoParaAtualizar
+        };
+    } catch (err) {
+        console.error("Erro ao atualizar solicitação no Firestore:", err);
+        throw err;
+    }
+}
+
+/**
  * Busca histórico de solicitações do usuário logado
  */
 export async function buscarHistoricoSolicitacoes(protheusCode, email) {

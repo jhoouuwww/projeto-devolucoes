@@ -14,6 +14,7 @@ import {
 import { 
     DevolucaoState, 
     carregarItensDoUsuario, 
+    carregarSolicitacaoParaEdicao,
     toggleItemSelecao, 
     atualizarQuantidadeItem, 
     avancarEtapa, 
@@ -445,6 +446,18 @@ function updateAuthUI() {
 function renderFluxoDevolucao() {
     const step = DevolucaoState.etapaAtual;
 
+    // Atualiza banner de modo de edição
+    const bannerEdicao = document.getElementById("banner-modo-edicao");
+    const lblProtocolo = document.getElementById("lbl-edicao-protocolo");
+    if (bannerEdicao) {
+        if (DevolucaoState.idEmEdicao) {
+            bannerEdicao.classList.remove("hidden");
+            if (lblProtocolo) lblProtocolo.textContent = DevolucaoState.protocoloEmEdicao || "DEV-2026-XXXX";
+        } else {
+            bannerEdicao.classList.add("hidden");
+        }
+    }
+
     // Atualiza Step Bar Indicator
     for (let i = 1; i <= 4; i++) {
         const stepEl = document.getElementById(`step-indicator-${i}`);
@@ -841,6 +854,18 @@ function renderEtapa4Resumo() {
     }
 
     document.getElementById("resumo-obs-gerais").textContent = DevolucaoState.observacoesGerais || "Sem observações adicionais.";
+
+    // Atualiza texto do botão final conforme modo de edição
+    const btnConfirmar = document.getElementById("btn-confirmar-final");
+    if (btnConfirmar) {
+        if (DevolucaoState.idEmEdicao) {
+            btnConfirmar.innerHTML = `<i class="fa-solid fa-floppy-disk mr-2"></i> Salvar Alterações da Solicitação`;
+            btnConfirmar.className = "px-8 py-3 bg-[#008497] hover:bg-[#006064] text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer";
+        } else {
+            btnConfirmar.innerHTML = `<i class="fa-solid fa-check mr-2"></i> Confirmar Solicitação`;
+            btnConfirmar.className = "px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer";
+        }
+    }
 }
 
 let _modalSucessoTimer = null;
@@ -1032,6 +1057,10 @@ async function renderHistorico() {
                             <button class="dropdown-item" data-action="view" data-id="${sol.id || sol.protocolo}">
                                 <i class="fa-solid fa-eye text-xs text-slate-500"></i>
                                 <span>Visualizar Detalhes</span>
+                            </button>
+                            <button class="dropdown-item" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                                <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
+                                <span>Editar Solicitação</span>
                             </button>
                             <div class="dropdown-divider"></div>
                             <button class="dropdown-item text-rose-600 hover:bg-rose-50 hover:text-rose-700" data-action="delete" data-id="${sol.id || sol.protocolo}">
@@ -1226,6 +1255,10 @@ function _filtrarERenderizarAdmGeral() {
                                 <button class="dropdown-item" data-action="view" data-id="${sol.id || sol.protocolo}">
                                     <i class="fa-solid fa-eye text-xs text-slate-500"></i>
                                     <span>Visualizar Detalhes</span>
+                                </button>
+                                <button class="dropdown-item" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                                    <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
+                                    <span>Editar Solicitação</span>
                                 </button>
                                 <div class="dropdown-divider"></div>
                                 <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -1499,19 +1532,31 @@ function initEventListeners() {
     // 6. Confirmação Final e Gravação no Firestore (Abre o Modal de Sucesso)
     document.getElementById("btn-confirmar-final")?.addEventListener("click", async () => {
         const btn = document.getElementById("btn-confirmar-final");
+        const isEditing = Boolean(DevolucaoState.idEmEdicao);
         btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Confirmando Solicitação...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> ${isEditing ? 'Salvando Alterações...' : 'Confirmando Solicitação...'}`;
 
         try {
             const res = await confirmarEGravarSolicitacao();
-            showToast("Solicitação de devolução registrada com sucesso!", "success");
+            showToast(isEditing ? "Solicitação de devolução atualizada com sucesso!" : "Solicitação de devolução registrada com sucesso!", "success");
             exibirModalSucessoDevolucao(res);
         } catch (err) {
             showToast("Erro ao gravar solicitação: " + err.message, "error");
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-check mr-2"></i> Confirmar Solicitação`;
+            btn.innerHTML = isEditing 
+                ? `<i class="fa-solid fa-floppy-disk mr-2"></i> Salvar Alterações da Solicitação`
+                : `<i class="fa-solid fa-check mr-2"></i> Confirmar Solicitação`;
         }
+    });
+
+    // 6.1. Botão Cancelar Modo de Edição no Banner
+    document.getElementById("btn-cancelar-edicao-banner")?.addEventListener("click", async () => {
+        reiniciarFluxoDevolucao();
+        await carregarItensDoUsuario();
+        renderFluxoDevolucao();
+        renderMiniRelatorioAtivos();
+        showToast("Modo de edição cancelado. Pronto para nova solicitação.", "info");
     });
 
     // 7. Botão Nova Devolução e Botão X de fechar dentro do Modal de Sucesso
@@ -1802,8 +1847,22 @@ function initEventListeners() {
         exportarSolicitacoesParaExcel();
     });
     // 12. Modal de Detalhes da Solicitação (Pop-up Moderno)
+let _modalDetalhesCurrentSol = null;
+
     document.getElementById("btn-fechar-modal-detalhes")?.addEventListener("click", fecharModalDetalhesSolicitacao);
     document.getElementById("btn-fechar-modal-detalhes-footer")?.addEventListener("click", fecharModalDetalhesSolicitacao);
+    document.getElementById("btn-editar-modal-detalhes")?.addEventListener("click", async () => {
+        if (_modalDetalhesCurrentSol) {
+            fecharModalDetalhesSolicitacao();
+            showToast(`Carregando solicitação ${_modalDetalhesCurrentSol.protocolo || ''} para edição...`, "info");
+            await carregarSolicitacaoParaEdicao(_modalDetalhesCurrentSol);
+            window.appSetTab("devolucao");
+            renderFluxoDevolucao();
+            renderMiniRelatorioAtivos();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            showToast(`Modo de edição: Solicitação ${_modalDetalhesCurrentSol.protocolo || ''} pronta para alteração.`, "success");
+        }
+    });
     document.getElementById("modal-detalhes-solicitacao")?.addEventListener("click", (e) => {
         if (e.target.id === "modal-detalhes-solicitacao") {
             fecharModalDetalhesSolicitacao();
@@ -1822,6 +1881,8 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
         showToast("Solicitação não encontrada.", "warning");
         return;
     }
+
+    _modalDetalhesCurrentSol = sol;
 
     const modal = document.getElementById("modal-detalhes-solicitacao");
     if (!modal) return;
@@ -2053,6 +2114,20 @@ document.addEventListener("click", async (e) => {
 
         if (action === 'view') {
             abrirModalDetalhesSolicitacao(id);
+        } else if (action === 'edit') {
+            const sol = (_todasSolicitacoesCache || []).find(s => s.id === id || s.protocolo === id) ||
+                        (HistoricoState.solicitacoes || []).find(s => s.id === id || s.protocolo === id);
+            if (sol) {
+                showToast(`Carregando solicitação ${sol.protocolo || id} para edição...`, "info");
+                await carregarSolicitacaoParaEdicao(sol);
+                window.appSetTab("devolucao");
+                renderFluxoDevolucao();
+                renderMiniRelatorioAtivos();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                showToast(`Modo de edição: Solicitação ${sol.protocolo || id} pronta para alteração.`, "success");
+            } else {
+                showToast("Solicitação não encontrada para edição.", "warning");
+            }
         } else if (action === 'status') {
             const novoStatusKey = actionBtn.dataset.status;
             window.appAlterarStatusSolicitacao(id, novoStatusKey);

@@ -2,7 +2,7 @@
  * Módulo de Fluxo de Solicitação de Devoluções
  */
 import { AuthState } from "./auth.js";
-import { buscarAtivosPorProtheus, gravarSolicitacaoNoFirestore } from "./api.js";
+import { buscarAtivosPorProtheus, gravarSolicitacaoNoFirestore, atualizarSolicitacaoNoFirestore } from "./api.js";
 import { FILIAIS_BRASPRESS } from "./config.js";
 
 export const DevolucaoState = {
@@ -10,6 +10,8 @@ export const DevolucaoState = {
     itensDisponiveis: [],
     itensSelecionados: new Map(), // id -> { item, quantidadeDevolvida }
     filtroTexto: "",
+    idEmEdicao: null, // ID do documento caso esteja editando
+    protocoloEmEdicao: null, // Protocolo original caso esteja editando
     volumes: {
         quantidadeCaixas: 1,
         pesoAproximadoKg: "",
@@ -53,6 +55,85 @@ export async function carregarItensDoUsuario() {
     } finally {
         DevolucaoState.carregando = false;
     }
+}
+
+/**
+ * Carrega uma solicitação existente para modo de edição completo
+ */
+export async function carregarSolicitacaoParaEdicao(sol) {
+    DevolucaoState.idEmEdicao = sol.id || sol.protocolo;
+    DevolucaoState.protocoloEmEdicao = sol.protocolo;
+    DevolucaoState.etapaAtual = 1;
+    DevolucaoState.solicitacaoConcluida = null;
+
+    // 1. Carrega os itens do usuário no Firestore primeiro
+    await carregarItensDoUsuario();
+
+    // 2. Popula itensSelecionados e garante presença na lista disponível
+    DevolucaoState.itensSelecionados.clear();
+    if (Array.isArray(sol.itens)) {
+        sol.itens.forEach(it => {
+            const cod = it.codigoItem || it.produto || "";
+            const nf = it.notaFiscal || it.nfRemessa || "";
+            const qtdDev = Number(it.quantidadeDevolvida || it.quantidade || 1);
+
+            // Tenta achar correspondente na lista disponível
+            let itemEncontrado = DevolucaoState.itensDisponiveis.find(disp => 
+                (disp.id === it.id) || 
+                ((disp.codigoItem === cod || disp.produto === cod) && (disp.notaFiscal === nf || disp.nfRemessa === nf))
+            );
+
+            if (!itemEncontrado) {
+                // Se o item não estiver na lista (ex: estava com saldo 0 após submissão), adiciona como disponível
+                itemEncontrado = {
+                    id: it.id || `edit_${nf}_${cod}`,
+                    codigoItem: cod,
+                    produto: cod,
+                    descricao: it.descricao || "",
+                    notaFiscal: nf,
+                    nfRemessa: nf,
+                    pedido: it.pedido || "",
+                    saldoDisponivel: qtdDev,
+                    saldo: qtdDev,
+                    numeroSerie: it.numeroSerie || ""
+                };
+                DevolucaoState.itensDisponiveis.unshift(itemEncontrado);
+            } else {
+                // Ajusta saldo somando a quantidade previamente reservada
+                itemEncontrado.saldoDisponivel = Math.max(Number(itemEncontrado.saldoDisponivel || itemEncontrado.saldo || 0), qtdDev);
+            }
+
+            DevolucaoState.itensSelecionados.set(itemEncontrado.id, {
+                ...itemEncontrado,
+                quantidadeDevolvida: qtdDev
+            });
+        });
+    }
+
+    // 3. Popula volumes
+    DevolucaoState.volumes = {
+        quantidadeCaixas: Number(sol.volumes?.quantidadeCaixas || 1),
+        pesoAproximadoKg: sol.volumes?.pesoAproximadoKg || "",
+        observacoesEmbalagem: sol.volumes?.observacoesEmbalagem || ""
+    };
+
+    // 4. Popula logística
+    DevolucaoState.logistica = {
+        tipo: sol.logistica?.tipo || "braspress",
+        filialBraspress: sol.logistica?.filialBraspress || "São Paulo - Matriz/Vila Maria (SP)",
+        filialOutraTexto: "",
+        transportadoraRegional: {
+            nome: sol.logistica?.transportadoraRegional?.nome || "",
+            telefone: sol.logistica?.transportadoraRegional?.telefone || "",
+            cidade: sol.logistica?.transportadoraRegional?.cidade || sol.logistica?.cidadeOrigem || "",
+            uf: sol.logistica?.transportadoraRegional?.uf || sol.logistica?.ufOrigem || "",
+            contato: sol.logistica?.transportadoraRegional?.contato || ""
+        },
+        motivoEscolhaRegional: sol.logistica?.motivoEscolhaRegional || ""
+    };
+
+    // 5. Observações gerais
+    DevolucaoState.observacoesGerais = sol.observacoesGerais || "";
 }
 
 /**
@@ -144,7 +225,7 @@ export function voltarEtapa() {
 }
 
 /**
- * Envia a solicitação final para o Firestore
+ * Envia a solicitação final para o Firestore (criação ou atualização)
  */
 export async function confirmarEGravarSolicitacao() {
     if (DevolucaoState.itensSelecionados.size === 0) {
@@ -177,9 +258,17 @@ export async function confirmarEGravarSolicitacao() {
         observacoesGerais: DevolucaoState.observacoesGerais || ""
     };
 
-    const resultado = await gravarSolicitacaoNoFirestore(payload);
+    let resultado;
+    if (DevolucaoState.idEmEdicao) {
+        resultado = await atualizarSolicitacaoNoFirestore(DevolucaoState.idEmEdicao, {
+            ...payload,
+            protocolo: DevolucaoState.protocoloEmEdicao
+        });
+    } else {
+        resultado = await gravarSolicitacaoNoFirestore(payload);
+    }
+
     DevolucaoState.solicitacaoConcluida = resultado;
-    DevolucaoState.etapaAtual = 5; // Tela de Sucesso
     return resultado;
 }
 
@@ -188,6 +277,8 @@ export async function confirmarEGravarSolicitacao() {
  */
 export function reiniciarFluxoDevolucao() {
     DevolucaoState.etapaAtual = 1;
+    DevolucaoState.idEmEdicao = null;
+    DevolucaoState.protocoloEmEdicao = null;
     DevolucaoState.itensSelecionados.clear();
     DevolucaoState.volumes = {
         quantidadeCaixas: 1,
