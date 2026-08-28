@@ -1197,7 +1197,8 @@ async function renderHistorico() {
         return;
     }
 
-    listContainer.innerHTML = HistoricoState.solicitacoes.map(sol => {
+    listContainer.innerHTML = HistoricoState.solicitacoes.map((sol, index) => {
+        const key = registrarSolicitacao(sol);
         const badge = getStatusBadge(sol.status);
         const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
         const totalAtivos = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
@@ -1208,9 +1209,9 @@ async function renderHistorico() {
             <tr class="hover:bg-slate-50/80 transition-colors">
                 <!-- 1. ID / Protocolo -->
                 <td class="whitespace-nowrap">
-                    <span class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')" title="Clique para ver detalhes">
+                    <button type="button" class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1 bg-transparent border-0 p-0 text-left" onclick="window.appVerDetalhesSolicitacao('${key}')" title="Clique para ver detalhes">
                         <i class="fa-solid fa-eye text-[10px] opacity-70"></i> ${sol.protocolo || "-"}
-                    </span>
+                    </button>
                 </td>
 
                 <!-- 2. Data Registro -->
@@ -1258,24 +1259,24 @@ async function renderHistorico() {
                 <td class="whitespace-nowrap">
                     <div class="menu-acoes-container">
                         <!-- Botão de Ação -->
-                        <button class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
+                        <button type="button" class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${key}">
                             <i class="fa-solid fa-ellipsis text-xs text-slate-700"></i>
                             <span>Ações</span>
                             <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
                         </button>
                     
                         <!-- Lista / Menu Dropdown Dinâmico -->
-                        <div class="dropdown-acoes-menu" id="dropdown-${sol.id || sol.protocolo}">
-                            <button class="dropdown-item cursor-pointer" data-action="view" data-id="${sol.id || sol.protocolo}" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')">
+                        <div class="dropdown-acoes-menu" id="dropdown-${key}">
+                            <button type="button" class="dropdown-item cursor-pointer" data-action="view" data-id="${key}" onclick="window.appVerDetalhesSolicitacao('${key}')">
                                 <i class="fa-solid fa-eye text-xs text-[#008497]"></i>
                                 <span>Visualizar Detalhes</span>
                             </button>
-                            <button class="dropdown-item cursor-pointer" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                            <button type="button" class="dropdown-item cursor-pointer" data-action="edit" data-id="${key}">
                                 <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
                                 <span>Editar Solicitação</span>
                             </button>
                             <div class="dropdown-divider"></div>
-                            <button class="dropdown-item text-rose-600 hover:bg-rose-50 hover:text-rose-700" data-action="delete" data-id="${sol.id || sol.protocolo}">
+                            <button type="button" class="dropdown-item text-rose-600 hover:bg-rose-50 hover:text-rose-700" data-action="delete" data-id="${key}">
                                 <i class="fa-solid fa-trash-can text-rose-500 text-xs w-4 text-center"></i>
                                 <span>Excluir Solicitação</span>
                             </button>
@@ -1387,7 +1388,8 @@ function _filtrarERenderizarAdmGeral() {
     }
 
     if (tbody) {
-        tbody.innerHTML = filtradas.map(sol => {
+        tbody.innerHTML = filtradas.map((sol, index) => {
+            const key = registrarSolicitacao(sol);
             const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
             const totalAtivos = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
             const totalNFe = sol.itens ? (new Set(sol.itens.map(it => it.notaFiscal).filter(Boolean))).size || (new Set(sol.notasFiscais || [])).size || 1 : 1;
@@ -1401,9 +1403,9 @@ function _filtrarERenderizarAdmGeral() {
                 <tr class="hover:bg-slate-50/80 transition-colors">
                     <!-- 1. ID / Protocolo (Minimalista Padrão Passagens) -->
                     <td class="whitespace-nowrap">
-                        <span class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')" title="Clique para ver detalhes">
+                        <button type="button" class="font-semibold text-[#008497] hover:underline cursor-pointer text-xs flex items-center gap-1 bg-transparent border-0 p-0 text-left" onclick="window.appVerDetalhesSolicitacao('${key}')" title="Clique para ver detalhes">
                             <i class="fa-solid fa-eye text-[10px] opacity-70"></i> ${sol.protocolo || "-"}
-                        </span>
+                        </button>
                     </td>
 
                     <!-- 2. Data Registro -->
@@ -1458,19 +1460,19 @@ function _filtrarERenderizarAdmGeral() {
                     <td class="whitespace-nowrap">
                         <div class="menu-acoes-container">
                             <!-- Botão de Ação -->
-                            <button class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${sol.id || sol.protocolo}">
+                            <button type="button" class="btn-acoes-toggle cursor-pointer" data-toggle="dropdown" data-id="${key}">
                                 <i class="fa-solid fa-ellipsis text-xs text-slate-700"></i>
                                 <span>Ações</span>
                                 <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
                             </button>
 
                             <!-- Lista / Menu Dropdown Dinâmico -->
-                            <div class="dropdown-acoes-menu" id="dropdown-${sol.id || sol.protocolo}">
-                                <button class="dropdown-item cursor-pointer" data-action="view" data-id="${sol.id || sol.protocolo}" onclick="window.appVerDetalhesSolicitacao('${sol.id || sol.protocolo}')">
+                            <div class="dropdown-acoes-menu" id="dropdown-${key}">
+                                <button type="button" class="dropdown-item cursor-pointer" data-action="view" data-id="${key}" onclick="window.appVerDetalhesSolicitacao('${key}')">
                                     <i class="fa-solid fa-eye text-xs text-[#008497]"></i>
                                     <span>Visualizar Detalhes</span>
                                 </button>
-                                <button class="dropdown-item cursor-pointer" data-action="edit" data-id="${sol.id || sol.protocolo}">
+                                <button type="button" class="dropdown-item cursor-pointer" data-action="edit" data-id="${key}">
                                     <i class="fa-solid fa-pen-to-square text-xs text-[#008497]"></i>
                                     <span>Editar Solicitação</span>
                                 </button>
@@ -1479,13 +1481,13 @@ function _filtrarERenderizarAdmGeral() {
                                     Alterar Status
                                 </div>
                                 ${Object.values(STATUS_DEVOLUCAO).map(st => `
-                                    <button class="dropdown-item ${st.key === statusInfo.key ? 'font-bold text-[#008497]' : ''}" data-action="status" data-status="${st.key}" data-id="${sol.id || sol.protocolo}">
+                                    <button type="button" class="dropdown-item ${st.key === statusInfo.key ? 'font-bold text-[#008497]' : ''}" data-action="status" data-status="${st.key}" data-id="${key}">
                                         <i class="${st.icon} ${st.iconColor} text-xs w-4 text-center"></i>
                                         <span>${st.label}</span>
                                     </button>
                                 `).join("")}
                                 <div class="dropdown-divider"></div>
-                                <button class="dropdown-item text-rose-600 hover:bg-rose-50 hover:text-rose-700" data-action="delete" data-id="${sol.id || sol.protocolo}">
+                                <button type="button" class="dropdown-item text-rose-600 hover:bg-rose-50 hover:text-rose-700" data-action="delete" data-id="${key}">
                                     <i class="fa-solid fa-trash-can text-rose-500 text-xs w-4 text-center"></i>
                                     <span>Excluir Solicitação</span>
                                 </button>
@@ -2077,41 +2079,90 @@ let _modalDetalhesCurrentSol = null;
     });
 }
 
+// Registro em memória de todas as solicitações para abertura garantida do modal
+const _solicitacoesMap = new Map();
+
+export function registrarSolicitacao(sol) {
+    if (!sol) return "";
+    const key = String(sol.id || sol.protocolo || `sol_${Math.random().toString(36).substring(2)}`).trim();
+    _solicitacoesMap.set(key, sol);
+    _solicitacoesMap.set(key.toLowerCase(), sol);
+    if (sol.id) {
+        const sid = String(sol.id).trim();
+        _solicitacoesMap.set(sid, sol);
+        _solicitacoesMap.set(sid.toLowerCase(), sol);
+    }
+    if (sol.protocolo) {
+        const prot = String(sol.protocolo).trim();
+        _solicitacoesMap.set(prot, sol);
+        _solicitacoesMap.set(prot.replace(/^#/, ""), sol);
+        _solicitacoesMap.set(prot.toLowerCase(), sol);
+        _solicitacoesMap.set(prot.replace(/^#/, "").toLowerCase(), sol);
+    }
+    return key;
+}
+
 /**
  * Função utilitária interna para localizar qualquer solicitação por ID, Protocolo ou Objeto
  */
 function _buscarSolicitacaoPorId(idOuProt) {
     if (!idOuProt) return null;
     if (typeof idOuProt === 'object') return idOuProt;
-    const cleanId = String(idOuProt || "").trim().toLowerCase();
+    const rawId = String(idOuProt || "").trim();
+    const cleanId = rawId.toLowerCase();
+    const cleanNum = cleanId.replace(/^#/, "");
+
+    // 1. Busca no Map global
+    let found = _solicitacoesMap.get(rawId) ||
+                _solicitacoesMap.get(cleanId) ||
+                _solicitacoesMap.get(cleanNum) ||
+                _solicitacoesMap.get(`#${cleanNum}`);
+
+    if (found) return found;
+
+    // 2. Busca nas listas em memória
     const todasListas = [
         ...(_todasSolicitacoesCache || []),
         ...(AdminState?.todasSolicitacoes || []),
         ...(HistoricoState?.solicitacoes || [])
     ];
-    let found = todasListas.find(s => {
+    
+    found = todasListas.find(s => {
         if (!s) return false;
         const sid = String(s.id || "").trim().toLowerCase();
         const sprot = String(s.protocolo || "").trim().toLowerCase();
         const sprotNum = sprot.replace(/^#/, "");
-        const cleanNum = cleanId.replace(/^#/, "");
 
-        return sid === cleanId || 
-               sprot === cleanId || 
+        return (sid && sid === cleanId) || 
+               (sprot && sprot === cleanId) || 
                (cleanNum && sprotNum === cleanNum) ||
                (cleanId && (sid.includes(cleanId) || sprot.includes(cleanId)));
     });
-    if (!found) {
-        try {
-            const locais = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
-            found = locais.find(s => {
-                const sid = String(s.id || "").trim().toLowerCase();
-                const sprot = String(s.protocolo || "").trim().toLowerCase();
-                return sid === cleanId || sprot === cleanId || sprot.replace(/^#/, "") === cleanId.replace(/^#/, "");
-            });
-        } catch (e) {}
+
+    if (found) {
+        registrarSolicitacao(found);
+        return found;
     }
-    return found;
+
+    // 3. Busca no localStorage
+    try {
+        const locais = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
+        found = locais.find(s => {
+            if (!s) return false;
+            const sid = String(s.id || "").trim().toLowerCase();
+            const sprot = String(s.protocolo || "").trim().toLowerCase();
+            const sprotNum = sprot.replace(/^#/, "");
+            return (sid && sid === cleanId) || 
+                   (sprot && sprot === cleanId) || 
+                   (cleanNum && sprotNum === cleanNum);
+        });
+        if (found) {
+            registrarSolicitacao(found);
+            return found;
+        }
+    } catch (e) {}
+
+    return null;
 }
 
 /**
@@ -2121,7 +2172,7 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
     const sol = _buscarSolicitacaoPorId(idOuProtocolo);
     
     if (!sol) {
-        console.warn("[abrirModalDetalhesSolicitacao] Solicitação não encontrada para ID:", idOuProtocolo);
+        console.warn("[abrirModalDetalhesSolicitacao] Solicitação não encontrada para:", idOuProtocolo);
         showToast("Solicitação não encontrada no momento. Tente atualizar a lista.", "warning");
         return;
     }
@@ -2213,9 +2264,14 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
         console.error("Erro ao preencher dados do modal de detalhes:", err);
     }
 
+    // Exibe o modal com prioridade visual
     modal.classList.remove("hidden");
+    modal.style.removeProperty("display");
     modal.style.setProperty("display", "flex", "important");
-    modal.style.zIndex = "99999";
+    modal.style.zIndex = "999999";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+    modal.style.pointerEvents = "auto";
 }
 
 export function fecharModalDetalhesSolicitacao() {
