@@ -270,24 +270,20 @@ export async function listarVinculosUsuarios() {
 export async function carregarTodasSolicitacoes() {
     const lista = [];
     try {
-        const firestorePromise = (async () => {
-            const snap = await getDocs(collection(db, "solicitacoes_devolucao"));
-            snap.forEach(d => {
-                lista.push({ id: d.id, ...d.data() });
-            });
-            return lista;
-        })();
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve([]), 2500));
-        await Promise.race([firestorePromise, timeoutPromise]);
+        const snap = await getDocs(collection(db, "solicitacoes_devolucao"));
+        snap.forEach(d => {
+            lista.push({ id: d.id, ...d.data() });
+        });
+        console.log(`[Admin] Sucesso: ${lista.length} solicitações carregadas do Firestore.`);
     } catch (e) {
         console.warn("Falha ao buscar todas solicitações do Firestore:", e);
     }
 
-    // Inclui locais
+    // Inclui locais (fallback de contingência)
     try {
         const localDevolucoes = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
         localDevolucoes.forEach(loc => {
-            if (!lista.some(item => item.protocolo === loc.protocolo)) {
+            if (!lista.some(item => (loc.protocolo && item.protocolo === loc.protocolo) || item.id === loc.id)) {
                 lista.push(loc);
             }
         });

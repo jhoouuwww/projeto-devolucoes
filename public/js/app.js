@@ -1320,6 +1320,60 @@ function exibirModalSucessoDevolucao(sol) {
 }
 
 /**
+ * Formata a célula de Logística para a tabela de Histórico e Gestão Geral ADM
+ */
+function _formatLogisticaColuna(logistica) {
+    if (!logistica) return '<span class="text-slate-400 text-xs">—</span>';
+
+    const tipo = logistica.tipo;
+    if (tipo === "braspress") {
+        const filial = logistica.filialBraspress === "outra" ? logistica.filialOutraTexto : logistica.filialBraspress;
+        return `
+            <div>
+                <div class="font-semibold text-[#0f172a] text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-warehouse text-[#008497] text-xs"></i> Braspress (Filial)
+                </div>
+                <div class="text-[11px] text-[#64748b] font-normal truncate max-w-[200px]" title="${filial || ''}">${filial || 'Filial não indicada'}</div>
+            </div>
+        `;
+    } else if (tipo === "braspress_retira") {
+        const ret = logistica.braspressRetira;
+        const endStr = ret ? `${ret.cidade || ''}/${ret.uf || ''} (CEP: ${ret.cep || '-'})` : 'Endereço indicado';
+        return `
+            <div>
+                <div class="font-semibold text-[#0f172a] text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-truck-pickup text-[#008497] text-xs"></i> Braspress (Coleta)
+                </div>
+                <div class="text-[11px] text-[#64748b] font-normal truncate max-w-[200px]" title="${endStr}">${endStr}</div>
+            </div>
+        `;
+    } else if (tipo === "filial_makita") {
+        const mak = logistica.filialMakita;
+        const nomeMak = mak?.nome || mak?.unidade || "Filial Oficial";
+        return `
+            <div>
+                <div class="font-semibold text-[#0f172a] text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-building-flag text-[#008497] text-xs"></i> Filial Makita
+                </div>
+                <div class="text-[11px] text-[#64748b] font-normal truncate max-w-[200px]" title="${nomeMak}">${nomeMak}</div>
+            </div>
+        `;
+    } else {
+        const reg = logistica.transportadoraRegional;
+        const regNome = reg?.nome || "Transp. Regional";
+        const regLoc = reg ? `${reg.cidade || logistica.cidadeOrigem || ''}/${reg.uf || logistica.ufOrigem || ''}` : '';
+        return `
+            <div>
+                <div class="font-semibold text-[#0f172a] text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-truck-ramp-box text-[#008497] text-xs"></i> Transp. Regional
+                </div>
+                <div class="text-[11px] text-[#64748b] font-normal truncate max-w-[200px]" title="${regNome} ${regLoc}">${regNome} ${regLoc ? '• ' + regLoc : ''}</div>
+            </div>
+        `;
+    }
+}
+
+/**
  * Renderiza o botão de ID/Protocolo com Tooltip Hover Rico (Tailwind CSS)
  */
 function _renderIdTooltip(sol, key) {
@@ -1604,15 +1658,19 @@ function _filtrarERenderizarAdmGeral() {
     }).length;
 
     // Atualiza badges/cards de KPI no DOM
-    const kpiSolic = document.getElementById("kpi-adm-total-solicitacoes");
-    const kpiItens = document.getElementById("kpi-adm-total-itens");
-    const kpiBras = document.getElementById("kpi-adm-despacho-braspress");
-    const kpiReg = document.getElementById("kpi-adm-transp-regionais");
+    const kpiSolic = document.getElementById("adm-main-kpi-total-solic") || document.getElementById("kpi-adm-total-solicitacoes");
+    const kpiItens = document.getElementById("adm-main-kpi-total-itens") || document.getElementById("kpi-adm-total-itens");
+    const kpiBras = document.getElementById("adm-main-kpi-braspress") || document.getElementById("kpi-adm-despacho-braspress");
+    const kpiReg = document.getElementById("adm-main-kpi-regional") || document.getElementById("kpi-adm-transp-regionais");
+    const admGreeting = document.getElementById("adm-main-greeting");
 
     if (kpiSolic) kpiSolic.textContent = totalSolic;
-    if (kpiItens) kpiItens.textContent = totalItens;
+    if (kpiItens) kpiItens.textContent = `${totalItens} un`;
     if (kpiBras) kpiBras.textContent = totalBraspress;
     if (kpiReg) kpiReg.textContent = totalRegional;
+    if (admGreeting && AuthState.profile) {
+        admGreeting.textContent = `Olá, ${formatNomeTitleCase(AuthState.profile.nome)} 👋`;
+    }
 
     if (filtradas.length === 0) {
         if (tbody) {
