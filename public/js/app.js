@@ -1927,7 +1927,7 @@ window.appAlterarStatusSolicitacao = async (idOuProtocolo, novoStatusKey) => {
 };
 
 // Gerenciamento compartilhado de cliques nos botões/dropdowns de Ações (Padrão Projeto Passagens)
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
     const toggleBtn = e.target.closest('[data-toggle="dropdown"]');
     if (toggleBtn) {
         e.stopPropagation();
@@ -2013,7 +2013,6 @@ window.addEventListener("scroll", () => {
 // Inicialização Robusta
 async function bootApp() {
     window.handleMsLogin = handleMsLogin;
-    window._makitaModuleReady = true;
     initEventListeners();
     subscribeAuth(updateAuthUI);
     await inicializarAuth();

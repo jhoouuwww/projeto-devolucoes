@@ -1,6 +1,7 @@
 /**
  * Módulo de Histórico de Solicitações de Devolução
  */
+import { AuthState } from "./auth.js";
 import { buscarHistoricoSolicitacoes, normalizarStatus } from "./api.js";
 
 export const HistoricoState = {
