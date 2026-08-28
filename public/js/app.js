@@ -2040,17 +2040,25 @@ function initEventListeners() {
         }
     });
 
-    // Bloco de Abas Flutuantes Fixas na Lateral Direita (FABs)
-    document.getElementById("fab-exportar-excel")?.addEventListener("click", () => {
-        exportarSolicitacoesParaExcel();
-    });
-    document.getElementById("fab-cadastrar-promotor")?.addEventListener("click", () => {
-        window.abrirModalCadastrarPromotor();
-    });
-    document.getElementById("fab-historico-devolucoes")?.addEventListener("click", () => {
+    // Bloco de Aba Flutuante Fixa na Lateral Direita (Atualizar)
+    document.getElementById("fab-atualizar-sistema")?.addEventListener("click", async () => {
         const emailLower = String(AuthState.profile?.email || "").toLowerCase().trim();
         const isUserAdmin = emailLower === "j_melgaco@makita.com.br" || emailLower.startsWith("j_melgaco@") || emailLower === "88901" || AuthState.profile?.protheus === "88901";
-        setTab(isUserAdmin ? "adm-geral" : "historico");
+        
+        showToast("Atualizando dados do sistema...", "info");
+        
+        if (isUserAdmin) {
+            await renderAdmGeralScreen();
+        } else {
+            await carregarItensDoUsuario();
+            renderMiniRelatorioAtivos();
+            renderFluxoDevolucao();
+            if (!document.getElementById("view-historico")?.classList.contains("hidden")) {
+                await renderHistorico();
+            }
+        }
+        
+        showToast("Dados sincronizados com sucesso!", "success");
     });
 
     document.getElementById("btn-header-export-excel")?.addEventListener("click", () => {

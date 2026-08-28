@@ -175,44 +175,18 @@
     </header>
 
     <!-- ================================================================= -->
-    <!-- BLOCO DE ABAS FLUTUANTES FIXAS NA LATERAL DIREITA (QUICK ACTIONS) -->
+    <!-- BLOCO DE ABAS FLUTUANTES FIXAS NA LATERAL DIREITA (ATUALIZAR)     -->
     <!-- ================================================================= -->
     <div id="floating-side-actions" class="fixed top-44 right-0 z-[45] flex flex-col gap-2.5 items-end">
-        <!-- 1. Aba Exportar Excel -->
-        <button id="fab-exportar-excel" 
-                type="button" 
-                class="group relative w-12 h-12 bg-white hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 rounded-l-2xl border-y border-l border-emerald-200 shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center transition-all duration-200 hover:w-14 cursor-pointer"
-                title="Exportar Relatório Excel">
-            <i class="fa-solid fa-file-excel text-lg"></i>
-            <!-- Tooltip à Esquerda -->
-            <div class="absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
-                <span>Exportar Relatório Excel (.xlsx)</span>
-                <div class="absolute -right-1 top-1/2 -translate-y-1/2 border-y-4 border-y-transparent border-l-4 border-l-slate-900"></div>
-            </div>
-        </button>
-
-        <!-- 2. Aba Cadastrar Promotor -->
-        <button id="fab-cadastrar-promotor" 
+        <!-- Aba Única: Atualizar Dados -->
+        <button id="fab-atualizar-sistema" 
                 type="button" 
                 class="group relative w-12 h-12 bg-white hover:bg-slate-50 text-[#008497] hover:text-[#006064] rounded-l-2xl border-y border-l border-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center transition-all duration-200 hover:w-14 cursor-pointer"
-                title="Cadastrar Promotor">
-            <i class="fa-solid fa-user-plus text-base"></i>
+                title="Atualizar Dados">
+            <i class="fa-solid fa-rotate text-base group-hover:rotate-180 transition-transform duration-500"></i>
             <!-- Tooltip à Esquerda -->
             <div class="absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
-                <span>Cadastrar Novo Promotor</span>
-                <div class="absolute -right-1 top-1/2 -translate-y-1/2 border-y-4 border-y-transparent border-l-4 border-l-slate-900"></div>
-            </div>
-        </button>
-
-        <!-- 3. Aba Histórico / Painel de Devoluções -->
-        <button id="fab-historico-devolucoes" 
-                type="button" 
-                class="group relative w-12 h-12 bg-white hover:bg-slate-50 text-[#008497] hover:text-[#006064] rounded-l-2xl border-y border-l border-slate-200 shadow-[0_4px_14px_rgba(0,0,0,0.12)] flex items-center justify-center transition-all duration-200 hover:w-14 cursor-pointer"
-                title="Histórico de Devoluções">
-            <i class="fa-solid fa-clock-rotate-left text-base"></i>
-            <!-- Tooltip à Esquerda -->
-            <div class="absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
-                <span>Consultar Solicitações</span>
+                <span>Atualizar Dados do Sistema</span>
                 <div class="absolute -right-1 top-1/2 -translate-y-1/2 border-y-4 border-y-transparent border-l-4 border-l-slate-900"></div>
             </div>
         </button>
@@ -1432,6 +1406,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_144200"></script>
+    <script type="module" src="./js/app.js?v=20260828_144400"></script>
 </body>
 </html>
