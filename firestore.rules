@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Regra para vínculos de usuário (E-mail -> Código Protheus)
+    match /usuarios_protheus/{document} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.email.matches('.*@makita[.]com[.]br$');
+    }
+
+    // Regra para solicitações de devolução
+    match /solicitacoes_devolucao/{document} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Regra para base de ativos e saldos em estoque
+    match /ativos_saldo/{document} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.email.matches('.*@makita[.]com[.]br$');
+    }
+
+    // Regra para Notas Fiscais disponíveis para devolução (coleção raiz)
+    match /nfe_disponiveis/{document} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Regra para estrutura hierárquica: promotores/{cód Protheus}/nfe_disponiveis
+    match /promotores/{promotorId} {
+      allow read: if true;
+      allow write: if true;
+      match /nfe_disponiveis/{document} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+  }
+}

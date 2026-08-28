@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Sistema de Devoluções — Makita do Brasil</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        makita: {
+                            teal: '#008497',
+                            tealDark: '#006a78',
+                            tealLight: '#e0f7fa',
+                            red: '#e30613',
+                            dark: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts (Inter) & Font Awesome 6 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SheetJS para Leitura Direta de Arquivos .XLSX / .XLS no Navegador -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Estilos Customizados -->
+    <link rel="stylesheet" href="./css/styles.css?v=20260827_220">
+</head>
+<body class="bg-[#f1f5f9] font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Container de Toasts de Notificação -->
+    <div id="toast-container"></div>
+
+    <!-- ================= TELA DE LOGIN MICROSOFT ================= -->
+    <style>
+        /* Blinda o input e botões do login contra o CSS global do projeto */
+        #login-screen input[type="email"] {
+            border: none !important;
+            border-bottom: 1px solid #000 !important;
+            border-radius: 0 !important;
+            background-color: transparent !important;
+            padding: 0 0 6px 0 !important;
+            box-shadow: none !important;
+        }
+        #login-screen input[type="email"]:focus {
+            border-bottom: 2px solid #0067b8 !important;
+            outline: none !important;
+        }
+        #login-screen button {
+            border-radius: 0 !important;
+            border: none !important;
+        }
+    </style>
+
+    <div id="login-screen" class="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 bg-[#f2f4f6]" 
+         style="background-image: url('https://aadcdn.msauth.net/shared/1.0/content/images/backgrounds/2_bc3d32a696895f78c19df6c717586a5d.svg'); background-size: cover; background-position: center;">
+
+        <div class="bg-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] max-w-[440px] w-full p-11 space-y-4">
+            <div class="flex items-center mb-6">
+                <svg class="w-6 h-6 mr-2" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                <span class="text-[#737373] font-semibold text-[15px]">Microsoft</span>
+            </div>
+
+            <h2 class="text-[24px] font-semibold text-[#1b1b1b] mb-2 tracking-tight">Iniciar sessão</h2>
+            <p id="login-error" class="text-[#e81123] text-[13px] hidden mb-2"></p>
+
+            <div class="pt-2">
+                <input type="email" id="login-email" placeholder="E-mail, telefone ou Skype" 
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();window.handleMsLogin&&window.handleMsLogin();}"
+                       class="w-full text-[15px] outline-none transition-all placeholder:text-[#666]">
+            </div>
+
+            <div class="pt-2 space-y-3">
+                <a href="#" onclick="return false;" class="text-[13px] text-[#0067b8] hover:text-[#333] hover:underline block">Nenhuma conta? Crie uma!</a>
+                <a href="#" onclick="return false;" class="text-[13px] text-[#0067b8] hover:text-[#333] hover:underline block">Não consegue aceder à sua conta?</a>
+            </div>
+
+            <div class="flex justify-end space-x-1 pt-8">
+                <button disabled class="bg-[#cccccc] text-[#666666] px-8 py-1.5 text-[15px] cursor-not-allowed min-w-[108px]">
+                    Anterior
+                </button>
+                <button id="btn-seguinte" type="button" onclick="window.handleMsLogin&&window.handleMsLogin()" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-1.5 text-[15px] transition-colors shadow-sm cursor-pointer min-w-[108px] flex justify-center items-center">
+                    Seguinte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay (top-level) -->
+    <div id="login-loading" class="hidden fixed inset-0 z-[300] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm gap-4">
+        <div class="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21" aria-hidden="true">
+                <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+                <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            <span class="text-[#5e5e5e] text-[20px] font-light">Microsoft</span>
+        </div>
+        <p class="text-[13px] text-[#616161]">A verificar o seu acesso...</p>
+        <div class="w-48 h-0.5 bg-[#e6e6e6] rounded overflow-hidden">
+            <div class="h-full bg-[#0067b8] animate-[loadbar_1.5s_ease-in-out_infinite]" style="width:40%"></div>
+        </div>
+    </div>
+
+    <!-- App principal — HIDDEN até o login ser concluído -->
+    <div id="app-container" class="hidden flex-col flex-1 relative">
+
+    <!-- ================================================================= -->
+    <!-- 3. CABEÇALHO DO SISTEMA                                           -->
+    <!-- ================================================================= -->
+    <header id="app-header" class="w-full bg-[#008497] px-4 sm:px-6 py-3 shadow-md sticky top-0 z-30 hidden">
+        <div class="w-full max-w-7xl mx-auto flex justify-between items-center gap-4">
+            <!-- Logo & Título (Esquerda) -->
+            <div class="flex items-center space-x-3 sm:space-x-4 shrink-0 whitespace-nowrap">
+                <img src="logo-makita-red.png" alt="Makita do Brasil" class="h-6 md:h-7 w-auto object-contain rounded-none">
+                <div class="h-5 md:h-6 w-px bg-white/40 hidden sm:block"></div>
+                <h1 class="text-xs sm:text-base md:text-lg font-bold text-white uppercase tracking-[0.5px]">SISTEMA DE DEVOLUÇÕES</h1>
+            </div>
+
+            <!-- Lado Direito: Botões Renderizados Dinamicamente por Perfil via JavaScript -->
+            <div id="header-buttons" class="flex items-center space-x-2 sm:space-x-3 shrink-0 flex-wrap">
+                <!-- Renderizado via app.js -->
+            </div>
+        </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!-- 4. CORPO PRINCIPAL DA APLICAÇÃO                                   -->
+    <!-- ================================================================= -->
+    <main id="app-main" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 relative z-0 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-8 space-y-6">
+            
+            <!-- Barra de Saudação / Dashboard-Header Promotor -->
+            <div id="dashboard-header-promotor" class="dashboard-header flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-5">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <h1 id="main-page-greeting" class="text-2xl font-bold text-slate-900 tracking-tight">Olá 👋</h1>
+                        <i class="fa-solid fa-truck-ramp-box text-[#008497] text-lg"></i>
+                    </div>
+                    <p id="tituloDashboard" class="text-xs font-medium text-slate-500 mt-1">Gerencie suas solicitações de devoluções de ativos Makita.</p>
+                </div>
+            </div>
+
+            <!-- MINI RELATÓRIO DE ATIVOS (Dashboard KPI Cards) -->
+            <div id="container-mini-relatorio" class="bg-gradient-to-r from-slate-50 to-teal-50/40 p-4 rounded-xl border border-slate-200/80 shadow-xs">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-[#008497] animate-pulse"></div>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie text-[#008497]"></i>
+                            Mini Relatório de Ativos
+                        </h3>
+                    </div>
+                    <span id="mini-relat-user-info" class="text-[11px] font-semibold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs">
+                        Resumo do Promotor
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <!-- Total Ativos -->
+                    <div class="bg-white p-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-teal-50 border border-teal-100 text-[#008497] flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Total Ativos</div>
+                            <div id="mini-relat-total" class="text-lg font-extrabold text-slate-900 font-mono">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Máquinas -->
+                    <div class="bg-white p-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Máquinas</div>
+                            <div id="mini-relat-maquinas" class="text-lg font-extrabold text-slate-900 font-mono">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Baterias -->
+                    <div class="bg-white p-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-battery-three-quarters"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Baterias</div>
+                            <div id="mini-relat-baterias" class="text-lg font-extrabold text-slate-900 font-mono">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Carregadores / Kits -->
+                    <div class="bg-white p-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-600 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-bolt-lightning"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Carregadores/Kits</div>
+                            <div id="mini-relat-carregadores" class="text-lg font-extrabold text-slate-900 font-mono">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Acessórios -->
+                    <div class="bg-white p-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-3 col-span-2 sm:col-span-1">
+                        <div class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Acessórios</div>
+                            <div id="mini-relat-acessorios" class="text-lg font-extrabold text-slate-900 font-mono">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- ============================================================= -->
+        <!-- ABA 1: NOVA SOLICITAÇÃO DE DEVOLUÇÃO (WIZARD POR ETAPAS)      -->
+        <!-- ============================================================= -->
+        <div id="view-devolucao" class="space-y-6">
+
+            <!-- STEP INDICATOR BAR -->
+            <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center max-w-3xl mx-auto">
+                    <!-- Step 1 -->
+                    <div class="step-item active" id="step-indicator-1">
+                        <div class="step-circle">1</div>
+                        <span class="text-xs font-semibold mt-2 text-slate-700">Ativos / Itens</span>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="step-item" id="step-indicator-2">
+                        <div class="step-circle">2</div>
+                        <span class="text-xs font-semibold mt-2 text-slate-500">Volumes</span>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="step-item" id="step-indicator-3">
+                        <div class="step-circle">3</div>
+                        <span class="text-xs font-semibold mt-2 text-slate-500">Logística</span>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="step-item" id="step-indicator-4">
+                        <div class="step-circle">4</div>
+                        <span class="text-xs font-semibold mt-2 text-slate-500">Resumo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ETAPA 1: SELEÇÃO DE NOTAS FISCAIS (Nova UX) -->
+            <div id="step-pane-1" class="space-y-4">
+
+                <!-- Cabeçalho e Barra de Filtros -->
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice text-[#008497]"></i>
+                                Selecione as Notas Fiscais para Devolução
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Apenas as notas vinculadas ao seu código Protheus são exibidas abaixo.</p>
+                        </div>
+
+                        <!-- Contador de selecionados + Botão Avançar no Topo -->
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <div id="nfe-selection-badge" class="hidden sm:flex items-center gap-2 px-3.5 py-2 bg-[#008497]/10 border border-[#008497]/30 rounded-xl text-[#008497] font-bold text-sm">
+                                <i class="fa-solid fa-check-square text-base"></i>
+                                <span id="nfe-selected-count">0</span>
+                                <span class="font-medium text-xs text-[#008497]/70">NF(s) selecionada(s)</span>
+                            </div>
+                            <button type="button" class="btn-avancar-etapa px-4 py-2 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2 cursor-pointer">
+                                Avançar <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Busca Universal -->
+                    <div class="relative w-full">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input
+                            type="text"
+                            id="nfe-search-input"
+                            placeholder="Buscar por NFe, cliente ou código do item..."
+                            class="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#008497]/30 focus:border-[#008497] focus:bg-white transition-all outline-none"
+                            autocomplete="off"
+                        >
+                        <button id="nfe-search-clear" class="hidden absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 text-xs transition" title="Limpar busca">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabela de NFes -->
+                <div class="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <!-- Estado de Loading -->
+                    <div id="nfe-loading-state" class="flex flex-col items-center justify-center py-16 gap-3 bg-white">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl text-[#008497]"></i>
+                        <p class="text-xs text-slate-500">Carregando suas notas fiscais do Firestore...</p>
+                    </div>
+
+                    <!-- Estado Vazio -->
+                    <div id="nfe-empty-state" class="hidden flex-col items-center justify-center py-16 gap-3 bg-white text-center">
+                        <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-2xl">
+                            <i class="fa-solid fa-file-circle-xmark"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-600">Nenhuma nota fiscal encontrada</p>
+                            <p class="text-xs text-slate-400 mt-1">Não há NFes pendentes vinculadas ao seu código Protheus.<br>Entre em contato com o administrativo caso isso seja um engano.</p>
+                        </div>
+                    </div>
+
+                    <!-- Estado Sem Resultados na Busca -->
+                    <div id="nfe-no-results-state" class="hidden flex-col items-center justify-center py-12 gap-2 bg-white text-center">
+                        <i class="fa-solid fa-magnifying-glass text-2xl text-slate-300"></i>
+                        <p class="text-sm font-semibold text-slate-500">Nenhum resultado para esta busca</p>
+                        <p class="text-xs text-slate-400">Tente outros termos ou limpe os filtros.</p>
+                    </div>
+
+                    <!-- Tabela principal (visível quando há dados) -->
+                    <div id="nfe-table-container" class="hidden overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <th class="px-3 py-3 text-center w-10">
+                                        <input type="checkbox" id="nfe-select-all" class="w-4 h-4 rounded border-slate-300 text-[#008497] cursor-pointer" title="Selecionar todas">
+                                    </th>
+                                    <th class="px-3 py-3">NF Remessa</th>
+                                    <th class="px-3 py-3">Cód. Cliente</th>
+                                    <th class="px-3 py-3">Nome Cliente</th>
+                                    <th class="px-3 py-3">Produto</th>
+                                    <th class="px-3 py-3">Descrição</th>
+                                    <th class="px-3 py-3 text-center">Saldo</th>
+                                    <th class="px-3 py-3">Pedido</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nfe-table-body" class="divide-y divide-slate-100 bg-white">
+                                <!-- Preenchido via app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer da Tabela -->
+                    <div id="nfe-table-footer" class="hidden px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-[#008497]"></i>
+                            <span id="nfe-footer-count">0 notas fiscais disponíveis</span>
+                            <span class="text-slate-300">·</span>
+                            <span id="nfe-footer-selected-label" class="text-[#008497] font-bold hidden"></span>
+                        </div>
+                        <button
+                            id="btn-avancar-para-volumes"
+                            class="px-6 py-2.5 bg-[#008497] hover:bg-[#006a78] text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            Avançar com as NFs selecionadas <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ETAPA 2: VOLUMES -->
+            <div id="step-pane-2" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Formulário de Volumes -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-boxes-packing text-[#008497]"></i>
+                                Quantidade de Volumes
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Informe quantas caixas/volumes serão necessários para a coleta.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                Quantidade de Volumes (Caixas) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fa-solid fa-box absolute left-3 top-3 text-slate-400 text-sm"></i>
+                                <input type="number" 
+                                       id="input-qtd-volumes" 
+                                       min="1" 
+                                       max="50" 
+                                       value="1" 
+                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:ring-1 focus:ring-[#008497] focus:bg-white">
+                            </div>
+                            <span class="text-[11px] text-slate-400 mt-1 block">Número total de caixas lacradas para a coleta/despacho.</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                Observações sobre a Embalagem ou Estado dos Itens <span class="text-slate-400 font-normal">(opcional)</span>
+                            </label>
+                            <textarea id="input-obs-volumes" 
+                                      rows="3" 
+                                      placeholder="Ex: Todas as caixas devidamente etiquetadas com plástico bolha e manuais inclusos." 
+                                      class="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-[#008497] focus:bg-white"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Resumo Rápido dos Itens Selecionados -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 whitespace-nowrap">Itens na Devolução</h3>
+                                <span id="step2-total-itens-badge" class="text-xs font-bold text-[#008497] bg-teal-50 px-2 py-0.5 rounded border border-teal-200 whitespace-nowrap">0 selecionados</span>
+                            </div>
+                            <div id="step2-selected-quicklist" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                <!-- Preenchido dinamicamente -->
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <div class="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span>Certifique-se de que os itens estejam bem acondicionados.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Navegação -->
+                <div class="flex justify-between items-center pt-2">
+                    <button class="btn-voltar-etapa px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar aos Itens
+                    </button>
+                    <button class="btn-avancar-etapa px-6 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs md:text-sm font-bold rounded-lg shadow transition-all flex items-center gap-2">
+                        Avançar para Logística <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ETAPA 3: MODALIDADE DE LOGÍSTICA -->
+            <div id="step-pane-3" class="space-y-6 hidden">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-truck-fast text-[#008497]"></i>
+                            Modalidade de Logística / Transporte
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Escolha como será realizada a coleta ou entrega dos volumes da devolução.
+                        </p>
+                    </div>
+
+                    <!-- Cards de Escolha de Logística -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Opção 1: Brasspress -->
+                        <div class="logistica-card selected p-5 rounded-xl flex items-start gap-4" data-tipo="braspress">
+                            <div class="p-3 bg-teal-50 text-[#008497] rounded-xl text-xl">
+                                <i class="fa-solid fa-warehouse"></i>
+                            </div>
+                            <div class="flex-1">
+                                <strong class="text-sm font-bold text-slate-800 block">Retirada em Filial Brasspress</strong>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                                    Colaborador irá se deslocar até a unidade selecionada para entrega direta na unidade / filial Brasspress mais próxima da sua região.
+                                </p>
+                                <span class="inline-block mt-3 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
+                                    <i class="fa-solid fa-clock-rotate-left mr-1 text-amber-600"></i> Processo mais longo e demorado por parte da Brasspress
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Opção 2: Transportadora Regional -->
+                        <div class="logistica-card p-5 rounded-xl flex items-start gap-4" data-tipo="transportadora_regional">
+                            <div class="p-3 bg-slate-100 text-slate-600 rounded-xl text-xl">
+                                <i class="fa-solid fa-truck-ramp-box"></i>
+                            </div>
+                            <div class="flex-1">
+                                <strong class="text-sm font-bold text-slate-800 block">Transportadora Regional Indicada</strong>
+                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                                    Utilize esta opção caso a distância até a filial Braspress seja excessiva e exija o deslocamento do caminhão até o seu endereço!.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos Específicos: Braspress -->
+                    <div id="container-braspress-fields" class="p-5 bg-teal-50/50 border border-teal-100 rounded-xl space-y-4">
+                        <!-- Busca por CEP para encontrar Filial mais próxima -->
+                        <div class="p-4 bg-white border border-teal-200 rounded-lg shadow-sm space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-location-crosshairs text-[#008497]"></i> Localizar Filial Braspress Mais Próxima por CEP:
+                                </label>
+                                <span class="text-[10px] bg-teal-100 text-[#008497] px-2 py-0.5 rounded font-bold uppercase">106 Filiais Oficiais</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <input type="text" 
+                                           id="input-cep-braspress" 
+                                           maxlength="9" 
+                                           placeholder="Digite seu CEP (Ex: 01310-100 ou 13480-000)" 
+                                           class="w-full p-2.5 pl-9 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:ring-1 focus:ring-[#008497] font-medium">
+                                    <i class="fa-solid fa-map-pin absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                </div>
+                                <button type="button" 
+                                        id="btn-buscar-cep-braspress" 
+                                        class="px-4 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fa-solid fa-magnifying-glass-location"></i> Buscar Filial
+                                </button>
+                            </div>
+                            <!-- Card de Resultado CEP da Filial Mais Próxima -->
+                            <div id="container-resultado-cep-braspress" class="hidden p-3 bg-teal-50 border border-teal-300 rounded-lg text-xs space-y-1.5">
+                                <div class="flex items-center justify-between text-[#008497] font-bold">
+                                    <span id="txt-cep-filial-nome"><i class="fa-solid fa-star text-amber-500"></i> Filial Recomendada</span>
+                                    <span id="txt-cep-distancia" class="bg-teal-100 px-2 py-0.5 rounded border border-teal-300 text-[11px]">- km</span>
+                                </div>
+                                <p id="txt-cep-endereco-usuario" class="text-slate-600 font-normal text-[11px] border-t border-teal-200/60 pt-1.5 mt-1"></p>
+                                <p id="txt-cep-filial-detalhes" class="text-slate-700 font-medium"></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                Selecione a Filial Braspress de Referência: <span class="text-rose-500">*</span>
+                            </label>
+                            <select id="select-filial-braspress" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-[#008497]">
+                                <!-- Preenchido via app.js com as 106 filiais oficiais da Braspress -->
+                            </select>
+                        </div>
+                        <div id="container-filial-outra" class="hidden">
+                            <input type="text" id="input-filial-braspress-outra" placeholder="Digite o endereço completo da filial Braspress..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Campos Específicos: Transportadora Regional -->
+                    <div id="container-regional-fields" class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Razão Social da Transportadora <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-reg-nome" placeholder="Ex: TransNordeste Express" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Telefone / WhatsApp de Contato</label>
+                                <input type="text" id="input-reg-tel" placeholder="Ex: (85) 99876-5432" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Cidade da Base da Transportadora <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-reg-cidade" placeholder="Ex: Juazeiro do Norte" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">UF <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-reg-uf" placeholder="Ex: CE" maxlength="2" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs uppercase font-mono">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Pessoa de Contato / Balcão</label>
+                                <input type="text" id="input-reg-contato" placeholder="Ex: Sr. Carlos (Gerente Operacional)" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo da Escolha Regional (Distância da Base)</label>
+                                <input type="text" id="input-reg-motivo" placeholder="Ex: Base Brasspress mais próxima fica a 350 km." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observações Gerais da Devolução -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            Observações Complementares da Devolução
+                        </label>
+                        <textarea id="input-obs-gerais-etapa3" 
+                                  rows="2" 
+                                  placeholder="Alguma instrução especial para o setor de expedição ou fiscal..." 
+                                  class="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-[#008497]"></textarea>
+                    </div>
+                </div>
+
+                <!-- Botões de Navegação -->
+                <div class="flex justify-between items-center pt-2">
+                    <button class="btn-voltar-etapa px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar aos Volumes
+                    </button>
+                    <button class="btn-avancar-etapa px-6 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs md:text-sm font-bold rounded-lg shadow transition-all flex items-center gap-2">
+                        Avançar para Resumo <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ETAPA 4: RESUMO E CONFIRMAÇÃO EXPLÍCITA -->
+            <div id="step-pane-4" class="space-y-6 hidden">
+                <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-check text-[#008497]"></i>
+                            Conferência e Resumo da Solicitação
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Revise atentamente todas as informações antes de confirmar o envio.
+                        </p>
+                    </div>
+
+                    <!-- Dados do Solicitante -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                        <div>
+                            <span class="text-slate-400 block font-medium">Colaborador / Solicitante:</span>
+                            <strong class="text-slate-800 text-sm" id="resumo-solicitante-nome">-</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block font-medium">E-mail:</span>
+                            <span class="text-slate-700 font-mono text-sm" id="resumo-solicitante-email">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Itens Selecionados para Devolução -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                Itens Selecionados para Devolução
+                            </h3>
+                            <span id="resumo-total-itens-count" class="text-xs font-bold text-[#008497] bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200">0 unidade(s)</span>
+                        </div>
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-[#008497] text-white text-xs font-bold uppercase tracking-wider">
+                                        <th class="p-3 text-left w-36">Código Item</th>
+                                        <th class="p-3 text-left">Descrição do Ativo</th>
+                                        <th class="p-3 text-center w-32">Nota Fiscal</th>
+                                        <th class="p-3 text-center w-32">Nº Pedido</th>
+                                        <th class="p-3 text-center w-32">Qtd Devolvida</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resumo-itens-body" class="divide-y divide-slate-100 bg-white">
+                                    <!-- Preenchido via app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Blocos de Volumes & Logística -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-boxes-stacked text-[#008497]"></i> Volumes & Embalagem
+                            </h4>
+                            <div class="flex justify-between py-1 border-b border-slate-200">
+                                <span class="text-slate-500">Total de Volumes:</span>
+                                <strong class="text-slate-800" id="resumo-volumes-count">1 caixa</strong>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-200">
+                                <span class="text-slate-500">Peso Estimado:</span>
+                                <span class="text-slate-700" id="resumo-volumes-peso">Não informado</span>
+                            </div>
+                            <div class="py-1">
+                                <span class="text-slate-500 block mb-0.5">Observações:</span>
+                                <p class="text-slate-600 italic" id="resumo-volumes-obs">-</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-truck text-[#008497]"></i> Logística de Envio
+                            </h4>
+                            <div class="py-1 border-b border-slate-200">
+                                <span class="text-slate-500 block text-[11px]">Modalidade:</span>
+                                <strong class="text-slate-800" id="resumo-logistica-tipo">Filial Brasspress</strong>
+                            </div>
+                            <div class="py-1">
+                                <span class="text-slate-500 block text-[11px]">Destino / Filial / Contato:</span>
+                                <p class="text-slate-700 font-medium" id="resumo-logistica-detalhe">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AVISO FISCAL OBRIGATÓRIO (Regra de Negócio) -->
+                    <div class="badge-fiscal p-4 rounded-xl flex items-start gap-3">
+                        <i class="fa-solid fa-scale-balanced text-xl mt-0.5 text-amber-800"></i>
+                        <div class="text-xs leading-relaxed">
+                            <strong class="font-bold block text-sm mb-1 text-amber-900">Aviso Fiscal Importante</strong>
+                            O processo fiscal de emissão de <strong>Carta de Correção Eletrônica (CC-e)</strong> e <strong>Nota Fiscal de Devolução (NF-e)</strong> é <strong>manual</strong>, realizado exclusivamente pelo Setor Fiscal da Makita do Brasil fora do sistema. A gravação desta solicitação dará início ao procedimento interno.
+                        </div>
+                    </div>
+
+                    <!-- Observações Gerais -->
+                    <div class="text-xs text-slate-500">
+                        <strong>Observações Gerais da Solicitação:</strong>
+                        <p class="mt-0.5 italic" id="resumo-obs-gerais">-</p>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação Final -->
+                <div class="flex justify-between items-center pt-2">
+                    <button class="btn-voltar-etapa px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar e Editar
+                    </button>
+                    <button id="btn-confirmar-final" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i> Confirmar Solicitação
+                    </button>
+                </div>
+            </div>
+
+            <!-- ETAPA 5: SUCESSO E PROTOCOLO -->
+            <div id="step-pane-5" class="space-y-6 hidden">
+                <div class="bg-white p-8 rounded-2xl border border-emerald-200 shadow-md text-center max-w-2xl mx-auto space-y-6">
+                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-slate-800">Solicitação Gravada com Sucesso!</h2>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Sua solicitação de devolução foi registrada no banco de dados e encaminhada para conferência fiscal.
+                        </p>
+                    </div>
+
+                    <!-- Badge do Protocolo -->
+                    <div class="p-5 bg-teal-50 border-2 border-dashed border-[#008497] rounded-2xl">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Número do Protocolo</span>
+                        <div class="text-2xl md:text-3xl font-mono font-black text-[#008497] tracking-wide mt-1" id="sucesso-protocolo-badge">
+                            DEV-2026-XXXX
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-2">
+                            Registrado em: <span id="sucesso-data-hora" class="font-medium">--/--/----</span>
+                        </div>
+                    </div>
+
+                    <!-- Resumo Rápido -->
+                    <div class="grid grid-cols-3 gap-3 p-4 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-100">
+                        <div>
+                            <span class="text-slate-400 block">Solicitante</span>
+                            <strong class="text-slate-800" id="sucesso-solicitante-nome">-</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Protheus</span>
+                            <strong class="font-mono text-[#008497]" id="sucesso-protheus-code">-</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Volumes</span>
+                            <strong class="text-slate-800" id="sucesso-total-volumes">1 caixa</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                        <button id="btn-imprimir-protocolo" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow">
+                            <i class="fa-solid fa-print"></i> Imprimir Comprovante
+                        </button>
+                        <button id="btn-nova-devolucao" class="px-6 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow">
+                            <i class="fa-solid fa-plus"></i> Nova Solicitação
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- ABA 2: HISTÓRICO DE SOLICITAÇÕES DO COLABORADOR              -->
+        <!-- ============================================================= -->
+        <div id="view-historico" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-[#008497]"></i>
+                        Minhas Solicitações de Devolução
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Acompanhe o andamento fiscal e logístico de todas as solicitações registradas por você.
+                    </p>
+                </div>
+                <button class="btn-primary cursor-pointer" onclick="window.appSetTab('devolucao')">
+                    <i class="fa-solid fa-plus"></i> <span>Nova Solicitação</span>
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="table-minhas-devolucoes">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>DATA REGISTRO</th>
+                            <th>ATIVOS / ITENS</th>
+                            <th>VOLUMES</th>
+                            <th>LOGÍSTICA</th>
+                            <th>STATUS</th>
+                            <th style="text-align: left;">AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historico-list-container">
+                        <!-- Preenchido via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- ABA 3: PAINEL ADMINISTRATIVO & IMPORTADOR DIRETO DO EXCEL     -->
+        <!-- ============================================================= -->
+        <div id="view-admin" class="space-y-6 hidden">
+            <!-- Card de Importação Direta do Excel (Ctrl+C / Ctrl+V) -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                            Importador Rápido de Planilha do Excel (Drive K:\)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Abra sua planilha no Excel local, selecione as linhas da tabela, copie (<strong>Ctrl+C</strong>) e cole (<strong>Ctrl+V</strong>) no campo abaixo.
+                        </p>
+                    </div>
+                    <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded border border-emerald-200">
+                        Sem dependência de TI
+                    </span>
+                </div>
+
+                <div class="flex border-b border-slate-200 gap-4 mb-3">
+                    <button id="tab-btn-import-file" class="pb-2 text-xs font-bold text-[#008497] border-b-2 border-[#008497] flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-arrow-up"></i> Selecionar Arquivo .XLSX / .XLS
+                    </button>
+                    <button id="tab-btn-import-paste" class="pb-2 text-xs font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-paste"></i> Colar do Excel (Ctrl+C / Ctrl+V)
+                    </button>
+                </div>
+
+                <!-- Painel 1: Upload Direto do Arquivo -->
+                <div id="panel-import-file" class="space-y-3">
+                    <div id="dropzone-excel-file" class="border-2 border-dashed border-slate-300 hover:border-[#008497] rounded-xl p-6 text-center bg-slate-50 hover:bg-teal-50/30 cursor-pointer transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Clique para selecionar ou arraste o arquivo do Excel (.xlsx / .xls)</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">O arquivo é lido instantaneamente dentro do seu navegador.</p>
+                        <input type="file" id="input-excel-file" accept=".xlsx, .xls, .csv" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Painel 2: Copiar e Colar -->
+                <div id="panel-import-paste" class="grid grid-cols-1 md:grid-cols-4 gap-4 hidden">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">
+                            Cole os dados copiados do Excel aqui:
+                        </label>
+                        <textarea id="textarea-excel-paste" 
+                                  rows="6" 
+                                  placeholder="Código Item	Descrição	Nota Fiscal	Pedido	Saldo	Código Protheus
+DHP482Z	PARAFUSADEIRA IMPACTO 18V	NF-0019284	PED-882910	2	12345
+HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345" 
+                                  class="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#008497]"></textarea>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                Código Protheus Padrão:
+                            </label>
+                            <input type="text" id="input-excel-protheus-alvo" placeholder="Ex: 12345 (se não estiver na coluna)" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono">
+                        </div>
+
+                        <button id="btn-processar-excel-colado" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition-all shadow">
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Processar Dados Colados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview dos Dados Colados -->
+                <div id="container-excel-preview" class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 hidden">
+                    <div class="flex justify-between items-center">
+                        <strong class="text-xs text-slate-700" id="excel-preview-count">0 linhas identificadas</strong>
+                        <button id="btn-salvar-excel-firestore" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all shadow">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Base no Firestore
+                        </button>
+                    </div>
+
+                    <div class="max-h-56 overflow-y-auto border border-slate-200 rounded-lg bg-white">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                                    <th class="p-2">Código</th>
+                                    <th class="p-2">Descrição</th>
+                                    <th class="p-2">NF</th>
+                                    <th class="p-2">Pedido</th>
+                                    <th class="p-2 text-center">Saldo</th>
+                                    <th class="p-2 text-center">Protheus</th>
+                                </tr>
+                            </thead>
+                            <tbody id="excel-preview-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cadastro e Gestão de Vínculos de Promotores -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear text-[#008497]"></i>
+                        Vínculos de Promotores (E-mail $\rightarrow$ Código Protheus)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Gerenciamento da tabela de permissão e associação de colaboradores.
+                    </p>
+                </div>
+
+                <form id="form-cadastrar-vinculo" class="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 bg-teal-50/50 border border-teal-100 rounded-xl">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">E-mail Corporativo</label>
+                        <input type="email" id="admin-input-email" required placeholder="nome@makita.com.br" class="w-full p-2 bg-white border border-slate-300 rounded text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Código Protheus</label>
+                        <input type="text" id="admin-input-protheus" required placeholder="Ex: 12345" class="w-full p-2 bg-white border border-slate-300 rounded text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Nome Completo</label>
+                        <input type="text" id="admin-input-nome" placeholder="Ex: João da Silva" class="w-full p-2 bg-white border border-slate-300 rounded text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Filial / Regional</label>
+                        <input type="text" id="admin-input-filial" placeholder="01 - Matriz" class="w-full p-2 bg-white border border-slate-300 rounded text-xs">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full py-2 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded shadow transition-all">
+                            <i class="fa-solid fa-user-plus mr-1"></i> Salvar Vínculo
+                        </button>
+                    </div>
+                </form>
+
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                                <th class="p-3">Protheus</th>
+                                <th class="p-3">Colaborador</th>
+                                <th class="p-3">E-mail</th>
+                                <th class="p-3">Filial</th>
+                                <th class="p-3 text-center">Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-vinculos-table-body" class="divide-y divide-slate-100">
+                            <!-- Preenchido via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div> <!-- /#view-admin -->
+
+        <!-- ============================================================= -->
+        <!-- TELA EXCLUSIVA ADM: GESTÃO GERAL DE TODAS AS SOLICITAÇÕES    -->
+        <!-- (EXCLUSIVO PARA j_melgaco@makita.com.br E ADMINISTRADORES)    -->
+        <!-- ============================================================= -->
+        <div id="view-adm-geral" class="space-y-6 hidden">
+            <!-- Barra Superior do Painel ADM -->
+            <div class="dashboard-header flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-5">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <h1 id="adm-main-greeting" class="text-2xl font-bold text-slate-900 tracking-tight">Olá 👋</h1>
+                        <i class="fa-solid fa-truck-ramp-box text-[#008497] text-lg"></i>
+                    </div>
+                    <p class="text-xs font-medium text-slate-500 mt-1">Acompanhamento de todas as solicitações de devoluções de ativos abertas pelos promotores, especialistas e vendedores.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-adm-export-excel-main" class="flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i> <span>Exportar Excel</span>
+                    </button>
+                    <button id="btn-adm-refresh-main" class="flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-2xs cursor-pointer">
+                        <i class="fa-solid fa-arrows-rotate text-[#008497]"></i> <span>Atualizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CARDS KPI DE GESTÃO GERAL (Padrão Projeto Passagens) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-[#0f172a]">Total de Solicitações</span>
+                        <i class="fa-solid fa-clipboard-list text-[#008497] text-base"></i>
+                    </div>
+                    <div id="adm-main-kpi-total-solic" class="text-2xl font-bold text-[#0f172a]">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-[#0f172a]">Ativos / Itens Devolvidos</span>
+                        <i class="fa-solid fa-boxes-stacked text-[#008497] text-base"></i>
+                    </div>
+                    <div id="adm-main-kpi-total-itens" class="text-2xl font-bold text-[#0f172a]">0 un</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-[#0f172a]">Despacho Braspress</span>
+                        <i class="fa-solid fa-warehouse text-[#008497] text-base"></i>
+                    </div>
+                    <div id="adm-main-kpi-braspress" class="text-2xl font-bold text-[#0f172a]">0</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-[#0f172a]">Transp. Regionais</span>
+                        <i class="fa-solid fa-truck text-[#008497] text-base"></i>
+                    </div>
+                    <div id="adm-main-kpi-regional" class="text-2xl font-bold text-[#0f172a]">0</div>
+                </div>
+            </div>
+
+            <!-- BARRA DE PESQUISA INTELIGENTE (Padrão Projeto Passagens) -->
+            <div class="relative w-full">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                <input
+                    type="text"
+                    id="input-search-adm-main"
+                    placeholder="Buscar por Protocolo, Nome do Promotor, E-mail, Protheus, NF ou Item..."
+                    class="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#008497]/30 focus:border-[#008497] focus:bg-white transition-all outline-none"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- TABELA DE SOLICITAÇÕES GERAIS (Padrão Projeto Passagens) -->
+            <div class="rounded-xl border border-slate-200 overflow-hidden shadow-2xs bg-white">
+                <div id="adm-main-loading" class="hidden flex-col items-center justify-center py-16 gap-3 bg-white text-center">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-[#008497]"></i>
+                    <p class="text-xs text-slate-500 font-medium">Carregando todas as solicitações do sistema...</p>
+                </div>
+
+                <div id="adm-main-empty" class="hidden flex-col items-center justify-center py-16 gap-3 bg-white text-center">
+                    <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-2xl mx-auto">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-600">Nenhuma solicitação de devolução registrada no momento.</p>
+                </div>
+
+                <div class="table-container">
+                    <table id="table-adm-main-solicitacoes">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>DATA REGISTRO</th>
+                                <th>SOLICITANTE</th>
+                                <th>ATIVOS / ITENS</th>
+                                <th>VOLUMES</th>
+                                <th>LOGÍSTICA</th>
+                                <th>STATUS</th>
+                                <th style="text-align: left;">AÇÕES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-adm-main-solicitacoes">
+                            <!-- Renderizado via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+    </div> <!-- /#app-container -->
+
+    <!-- ================================================================= -->
+    <!-- MODAL MODERNO DE DETALHES DA SOLICITAÇÃO (POP-UP EXCLUSIVO)       -->
+    <!-- ================================================================= -->
+    <div id="modal-detalhes-solicitacao" class="hidden fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all">
+        <div class="bg-white w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <!-- Header Modal (Minimalista Padrão Passagens) -->
+            <div class="bg-[#008497] px-6 py-4 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div>
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 class="text-base font-bold text-white tracking-tight">Detalhes da Solicitação</h2>
+                            <span id="modal-detalhes-protocolo-badge" class="px-2.5 py-0.5 bg-white/20 text-white rounded font-semibold text-xs border border-white/30"></span>
+                            <span id="modal-detalhes-status-badge" class="badge"></span>
+                        </div>
+                        <p id="modal-detalhes-subtitulo" class="text-xs text-teal-100 font-normal mt-0.5">Informações completas do registro de devolução</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="btn-fechar-modal-detalhes" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" title="Fechar">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body Modal -->
+            <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 bg-slate-50/60">
+                <!-- Grid de Informações: Solicitante + Logística + Volumes -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+                    <!-- Solicitante Card -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-[#008497] font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                            <i class="fa-solid fa-user text-xs"></i> Solicitante
+                        </div>
+                        <div class="space-y-1">
+                            <div id="modal-det-nome" class="font-semibold text-[#0f172a] text-sm">-</div>
+                            <div class="text-[#64748b] text-xs font-normal flex items-center gap-1.5"><i class="fa-solid fa-envelope text-[10px] text-slate-400"></i> <span id="modal-det-email">-</span></div>
+                            <div class="text-[#64748b] text-xs font-normal flex items-center gap-1.5"><i class="fa-solid fa-id-badge text-[10px] text-slate-400"></i> Cód. Protheus: <strong id="modal-det-protheus" class="text-[#0f172a] font-semibold">-</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Logística Card -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-[#008497] font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                            <i class="fa-solid fa-truck text-xs"></i> Modalidade Logística
+                        </div>
+                        <div class="space-y-1">
+                            <div id="modal-det-log-tipo" class="font-semibold text-[#0f172a] text-sm">-</div>
+                            <div id="modal-det-log-destino" class="text-[#0f172a] text-xs font-normal">-</div>
+                            <div id="modal-det-log-endereco" class="text-[#64748b] text-[11px] font-normal">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Volumes & Data Card -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-[#008497] font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                            <i class="fa-solid fa-box text-xs"></i> Volumes & Registro
+                        </div>
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between"><span class="text-[#64748b] font-normal">Data / Hora:</span> <strong id="modal-det-data" class="text-[#0f172a] font-medium">-</strong></div>
+                            <div class="flex items-center justify-between"><span class="text-[#64748b] font-normal">Volumes:</span> <strong id="modal-det-volumes" class="text-[#0f172a] font-medium">-</strong></div>
+                            <div class="flex items-center justify-between"><span class="text-[#64748b] font-normal">Total de Peças:</span> <strong id="modal-det-total-itens" class="text-[#008497] font-semibold">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Itens Selecionados na Devolução -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-slate-800 font-semibold text-xs">
+                            <i class="fa-solid fa-boxes-stacked text-[#008497]"></i>
+                            <span>Itens e Máquinas Incluídas</span>
+                        </div>
+                        <span id="modal-det-itens-count" class="text-[11px] font-semibold text-[#008497] bg-teal-50 px-2 py-0.5 rounded border border-teal-200"></span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-[#008497] text-white text-[11px] font-bold uppercase tracking-wider">
+                                    <th class="p-2.5 text-center w-10">#</th>
+                                    <th class="p-2.5">Código Item</th>
+                                    <th class="p-2.5">Descrição</th>
+                                    <th class="p-2.5 text-center">Nº Nota Fiscal</th>
+                                    <th class="p-2.5 text-center">Nº Pedido</th>
+                                    <th class="p-2.5 text-center">Qtd</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-det-tbody-itens" class="divide-y divide-slate-100 bg-white">
+                                <!-- Preenchido via app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Card de Observações Gerais -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
+                    <div class="text-[#008497] font-semibold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-comment-dots"></i> Observações
+                    </div>
+                    <p id="modal-det-observacoes" class="text-xs text-[#64748b] font-normal leading-relaxed">-</p>
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="p-4 bg-white border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                <button id="btn-fechar-modal-detalhes-footer" class="btn-secondary">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 5. SEÇÃO DE IMPRESSÃO DE COMPROVANTE (EXCLUSIVA PARA PRINT)       -->
+    <!-- ================================================================= -->
+    <div id="print-protocol-section" class="hidden">
+        <div id="print-protocol-content">
+            <!-- Preenchido via app.js -->
+        </div>
+    </div>
+
+        <!-- Motor de Autenticação Instantâneo e Transição de Telas -->
+    <script>
+    (function() {
+        var VINCULOS = {
+    "j_melgaco@makita.com.br":         { protheus: "88901", nome: "Jonathan Melgaço",               cargo: "Coordenador de Trade Marketing", filial: "01 - Matriz", isAdmin: true  },
+    "b_espindula@makita.com.br":       { protheus: "22371", nome: "Bruno de Fonseca Espindula",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "c_farias@makita.com.br":          { protheus: "16214", nome: "Cleissa Barreto Farias",         cargo: "Promotora Técnica",              filial: "01 - Matriz", isAdmin: false },
+    "d_nobrega@makita.com.br":         { protheus: "20712", nome: "Daniel Andrade Nóbrega",         cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "d_fernandes@makita.com.br":       { protheus: "22776", nome: "Davi Lopes Fernandes",           cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "denilson_silva@makita.com.br":    { protheus: "7163",  nome: "Denilson Lima Silva",            cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "diego_costa@makita.com.br":       { protheus: "7167",  nome: "Diego da Silva Costa",           cargo: "Analista De Produtos Técnico",   filial: "01 - Matriz", isAdmin: false },
+    "d_maia@makita.com.br":            { protheus: "20138", nome: "Diego da Cruz Maia",             cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "d_fortes@makita.com.br":          { protheus: "21932", nome: "Douglas Fortes",                 cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "d_costa@makita.com.br":           { protheus: "19845", nome: "Douglas Henrique de Jesus Costa",cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "em_santos@makita.com.br":         { protheus: "21762", nome: "Eder Matheus Martins Santos",    cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "er_souza@makitabr.onmicrosoft.com":{ protheus: "17378",nome: "Erisvan de Sousa",               cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "em_neto@makita.com.br":           { protheus: "21970", nome: "Ernandes Martins Tavares Neto",  cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "t_montenegro@makita.com.br":      { protheus: "16422", nome: "Felipe da Silva Montenegro",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "fr_santos@makita.com.br":         { protheus: "21935", nome: "Felipe Remenegildo dos Santos",  cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "fv_oliveira@makita.com.br":       { protheus: "17380", nome: "Felipe Vilas Boas de Oliveira",  cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "fc_costa@makita.com.br":          { protheus: "16347", nome: "Fernando Costa de Oliveira",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "fe_pereira@makita.com.br":        { protheus: "13556", nome: "Fernando Pereira da Silva",      cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "f_castro@makita.com.br":          { protheus: "22531", nome: "Fred Silva Castro",              cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "hcesar@makita.com.br":            { protheus: "9679",  nome: "Hermes César da Silva",          cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "h_alves@makita.com.br":           { protheus: "14982", nome: "Hiago Leonel do Carmo Alves",    cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "hizidio@makita.com.br":           { protheus: "9199",  nome: "Humberto Izídio de Lima",        cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "i_silva@makita.com.br":           { protheus: "22153", nome: "Igor Luciano da Silva",          cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "j_herculino@makita.com.br":       { protheus: "19459", nome: "Jhony Willrobson Herculino",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "j_figueiredo@makita.com.br":      { protheus: "22533", nome: "João Henrique M. de Figueiredo", cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "t_viti@makita.com.br":            { protheus: "22775", nome: "Thiago Teixeira Viti",           cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "jc_silva@makita.com.br":          { protheus: "13555", nome: "Julio Cesar de Souza Silva",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "k_araujo@makita.com.br":          { protheus: "21863", nome: "Keven Alves de Araujo",          cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "map_santos@makita.com.br":        { protheus: "21933", nome: "Marcelo Pereira Santos",         cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "mo_souza@makita.com.br":          { protheus: "21930", nome: "Marco Orelio Schtine de Souza",  cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "mv_souza@makita.com.br":          { protheus: "21446", nome: "Marcos Vinícius Torquarto",      cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "m_ladario@makita.com.br":         { protheus: "18342", nome: "Matheus Ramos Ladário",          cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "r_sousa@makita.com.br":           { protheus: "13557", nome: "Rodrigo Pereira de Souza",       cargo: "Analista De Produtos Técnico",   filial: "01 - Matriz", isAdmin: false },
+    "r_lima@makita.com.br":            { protheus: "12460", nome: "Rogério Soares Guimaraes Lima",  cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "s_monteiro@makita.com.br":        { protheus: "22532", nome: "Samuel Jonathas de Lima Monteiro",cargo: "Promotor Técnico",              filial: "01 - Matriz", isAdmin: false },
+    "s_mendes@makita.com.br":          { protheus: "22372", nome: "Sebastião Manuel Mendes",        cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "s_correia@makita.com.br":         { protheus: "15087", nome: "Sérgio Luiz da Silva Correia",   cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "s_oliveira@makita.com.br":        { protheus: "12983", nome: "Sérgio Sena de Oliveira",        cargo: "Analista De Produtos Técnico",   filial: "01 - Matriz", isAdmin: false },
+    "v_silva@makita.com.br":           { protheus: "22154", nome: "Vagner Doria Silva",             cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "v_jardim@makita.com.br":          { protheus: "22155", nome: "Vagner Machado Jardim",          cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "v_duarte@makita.com.br":          { protheus: "15624", nome: "Vitor Araujo Duarte",            cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "w_sodre@makita.com.br":           { protheus: "21186", nome: "Webeson da Silva Sodré",         cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "l_francisco@makita.com.br":       { protheus: "",      nome: "Leandro de Souza Francisco",     cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+    "e_machado@makita.com.br":         { protheus: "22942", nome: "Eduardo de Souza Machado",       cargo: "Promotor Técnico",               filial: "01 - Matriz", isAdmin: false },
+};
+        var ADMIN_EMAILS = ["j_melgaco@makita.com.br"];
+
+        function titleCase(str) {
+            if (!str) return "";
+            return str.toLowerCase().split(" ").map(function(w) {
+                if (!w) return "";
+                if (["de", "da", "do", "dos", "das", "e"].indexOf(w) !== -1) return w;
+                return w.charAt(0).toUpperCase() + w.slice(1);
+            }).join(" ");
+        }
+
+        function aplicarTransicaoUI(user) {
+            var loginScreen = document.getElementById("login-screen");
+            var loginLoading = document.getElementById("login-loading");
+            var blockScreen = document.getElementById("block-screen");
+            var appContainer = document.getElementById("app-container");
+            var appHeader = document.getElementById("app-header");
+            var appMain = document.getElementById("app-main");
+
+            if (loginScreen) { loginScreen.style.setProperty("display", "none", "important"); loginScreen.classList.add("hidden"); }
+            if (loginLoading) { loginLoading.style.setProperty("display", "none", "important"); loginLoading.classList.add("hidden"); }
+            if (blockScreen) { blockScreen.style.setProperty("display", "none", "important"); blockScreen.classList.add("hidden"); }
+
+            if (appContainer) { appContainer.style.setProperty("display", "flex", "important"); appContainer.classList.remove("hidden"); }
+            if (appHeader) { appHeader.style.setProperty("display", "block", "important"); appHeader.classList.remove("hidden"); }
+            if (appMain) { appMain.style.setProperty("display", "block", "important"); appMain.classList.remove("hidden"); }
+
+            var nomeFormatado = titleCase(user.nome || user.email.split("@")[0]);
+            var greeting1 = document.getElementById("main-page-greeting");
+            var greeting2 = document.getElementById("adm-main-greeting");
+            if (greeting1) greeting1.textContent = "Olá, " + nomeFormatado + " 👋";
+            if (greeting2) greeting2.textContent = "Olá, " + nomeFormatado + " 👋";
+
+            var elHeaderName = document.getElementById("header-user-name");
+            if (elHeaderName) elHeaderName.textContent = nomeFormatado;
+            var elHeaderProtheus = document.getElementById("header-user-protheus");
+            if (elHeaderProtheus) elHeaderProtheus.textContent = "Protheus: " + user.protheus;
+
+            var viewDevolucao = document.getElementById("view-devolucao");
+            var viewHistorico = document.getElementById("view-historico");
+            var viewAdmin = document.getElementById("view-admin");
+            var viewAdmGeral = document.getElementById("view-adm-geral");
+            var headerButtons = document.getElementById("header-buttons");
+            var containerMini = document.getElementById("container-mini-relatorio");
+            var dashPromotor = document.getElementById("dashboard-header-promotor");
+
+            if (user.isAdmin) {
+                if (containerMini) containerMini.classList.add("hidden");
+                if (dashPromotor) dashPromotor.classList.add("hidden");
+
+                if (viewAdmGeral) { viewAdmGeral.style.setProperty("display", "block", "important"); viewAdmGeral.classList.remove("hidden"); }
+                if (viewDevolucao) { viewDevolucao.style.setProperty("display", "none", "important"); viewDevolucao.classList.add("hidden"); }
+                if (viewHistorico) { viewHistorico.style.setProperty("display", "none", "important"); viewHistorico.classList.add("hidden"); }
+                if (viewAdmin) { viewAdmin.style.setProperty("display", "none", "important"); viewAdmin.classList.add("hidden"); }
+
+                if (headerButtons) {
+                    headerButtons.innerHTML = '<button id="btn-nav-adm-todas" class="nav-tab-btn flex items-center space-x-2 bg-white/30 border border-white text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="adm-geral"><i class="fa-solid fa-boxes-packing text-xs"></i> <span>Painel Geral de Devoluções</span></button><button onclick="window.fazerLogoutDirect()" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Sair"><i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span></button>';
+                }
+
+                if (typeof window.renderAdmGeralScreen === 'function') {
+                    window.renderAdmGeralScreen();
+                }
+            } else {
+                if (containerMini) containerMini.classList.remove("hidden");
+                if (dashPromotor) dashPromotor.classList.remove("hidden");
+
+                if (viewDevolucao) { viewDevolucao.style.setProperty("display", "block", "important"); viewDevolucao.classList.remove("hidden"); }
+                if (viewAdmGeral) { viewAdmGeral.style.setProperty("display", "none", "important"); viewAdmGeral.classList.add("hidden"); }
+                if (viewHistorico) { viewHistorico.style.setProperty("display", "none", "important"); viewHistorico.classList.add("hidden"); }
+                if (viewAdmin) { viewAdmin.style.setProperty("display", "none", "important"); viewAdmin.classList.add("hidden"); }
+
+                if (headerButtons) {
+                    headerButtons.innerHTML = '<button onclick="window.setTabDirect(\'devolucao\')" class="nav-tab-btn flex items-center space-x-2 bg-white/30 border border-white text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer"><i class="fa-solid fa-box-open text-xs"></i> <span>Nova Solicitação</span></button><button onclick="window.setTabDirect(\'historico\')" class="nav-tab-btn flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white/90 hover:text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer"><i class="fa-solid fa-clock-rotate-left text-xs"></i> <span>Minhas Devoluções</span></button><button onclick="window.fazerLogoutDirect()" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Sair"><i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span></button>';
+                }
+
+                if (typeof window.carregarItensDoUsuario === 'function') {
+                    window.carregarItensDoUsuario();
+                }
+            }
+        }
+
+        window.setTabDirect = function(tab) {
+            if (typeof window.setTab === 'function') {
+                window.setTab(tab);
+                return;
+            }
+            var viewDevolucao = document.getElementById("view-devolucao");
+            var viewHistorico = document.getElementById("view-historico");
+            var viewAdmin = document.getElementById("view-admin");
+            var viewAdmGeral = document.getElementById("view-adm-geral");
+
+            if (viewDevolucao) { viewDevolucao.style.setProperty("display", tab === "devolucao" ? "block" : "none", "important"); viewDevolucao.classList.toggle("hidden", tab !== "devolucao"); }
+            if (viewHistorico) { viewHistorico.style.setProperty("display", tab === "historico" ? "block" : "none", "important"); viewHistorico.classList.toggle("hidden", tab !== "historico"); }
+            if (viewAdmin) { viewAdmin.style.setProperty("display", tab === "admin" ? "block" : "none", "important"); viewAdmin.classList.toggle("hidden", tab !== "admin"); }
+            if (viewAdmGeral) { viewAdmGeral.style.setProperty("display", tab === "adm-geral" ? "block" : "none", "important"); viewAdmGeral.classList.toggle("hidden", tab !== "adm-geral"); }
+        };
+
+        window.fazerLogoutDirect = function() {
+            try { sessionStorage.removeItem("makita_auth_session"); } catch(e){}
+            try { localStorage.removeItem("makita_auth_session"); } catch(e){}
+            if (typeof window.fazerLogout === 'function') {
+                window.fazerLogout();
+            } else {
+                location.reload();
+            }
+        };
+
+        window.handleMsLogin = function() {
+            var input = document.getElementById('login-email');
+            var btn = document.getElementById('btn-seguinte');
+            var err = document.getElementById('login-error');
+            var val = (input ? input.value : '').toLowerCase().trim();
+
+            if (err) { err.textContent = ''; err.classList.add('hidden'); }
+            if (input) input.style.removeProperty('border-bottom');
+
+            if (!val) {
+                if (err) { err.textContent = 'Insira um endereço de e-mail.'; err.classList.remove('hidden'); }
+                if (input) { input.focus(); input.style.setProperty('border-bottom', '2px solid #e81123', 'important'); }
+                return;
+            }
+
+            var cleanUser = val.split('@')[0].trim();
+            var term = val.includes('@') && !val.endsWith('.com.br') && !val.endsWith('.onmicrosoft.com') ? cleanUser + '@makita.com.br' : val;
+
+            var vinculo = null;
+            for (var k in VINCULOS) {
+                var emailUser = k.toLowerCase().trim();
+                var uName = emailUser.split('@')[0];
+                var v = VINCULOS[k];
+                var pCode = String(v.protheus || '').trim();
+                var nUser = (v.nome || '').toLowerCase().trim();
+
+                if (term === emailUser || cleanUser === uName || term === uName || term === pCode || term === nUser || (term.length >= 3 && nUser.indexOf(term) !== -1)) {
+                    vinculo = {
+                        email: emailUser,
+                        nome: v.nome,
+                        protheus: v.protheus,
+                        filial: v.filial || '01 - Matriz',
+                        cargo: v.cargo || 'Promotor Técnico',
+                        isAdmin: (ADMIN_EMAILS.indexOf(emailUser) !== -1) || v.isAdmin === true
+                    };
+                    break;
+                }
+            }
+
+            if (!vinculo) {
+                var isAdmin = (ADMIN_EMAILS.indexOf(term) !== -1) || cleanUser === 'j_melgaco' || cleanUser === '88901' || cleanUser.indexOf('melgaco') !== -1;
+                var canonicalEmail = term.indexOf('@') !== -1 ? term : cleanUser + '@makita.com.br';
+                vinculo = {
+                    email: canonicalEmail,
+                    nome: isAdmin ? 'Jonathan Melgaço' : cleanUser.replace(/[._-]/g, ' '),
+                    protheus: isAdmin ? '88901' : '99999',
+                    filial: '01 - Matriz',
+                    cargo: isAdmin ? 'Coordenador de Trade Marketing' : 'Promotor Técnico',
+                    isAdmin: isAdmin
+                };
+            }
+
+            try {
+                sessionStorage.setItem('makita_auth_session', JSON.stringify(vinculo));
+                localStorage.setItem('makita_auth_session', JSON.stringify(vinculo));
+            } catch(e){}
+
+            aplicarTransicaoUI(vinculo);
+
+            // Sincroniza se o módulo já estiver carregado
+            if (typeof window.handleLogin === 'function' && window._makitaModuleReady) {
+                window.handleLogin();
+            }
+        };
+
+        // Restauração automática de sessão salva
+        function checarSessaoSalva() {
+            try {
+                var saved = sessionStorage.getItem('makita_auth_session') || localStorage.getItem('makita_auth_session');
+                if (saved) {
+                    var parsed = JSON.parse(saved);
+                    if (parsed && parsed.email) {
+                        aplicarTransicaoUI(parsed);
+                    }
+                }
+            } catch(e){}
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checarSessaoSalva);
+        } else {
+            checarSessaoSalva();
+        }
+    })();
+    </script>
+    <!-- Script Principal como Módulo ES6 -->
+    <script type="module" src="./js/app.js?v=20260827_800"></script>
+</body>
+</html>
