@@ -74,15 +74,144 @@ export function normalizarStatus(statusRaw) {
  * Consulta os ativos disponíveis para devolução com base no código Protheus
  */
 export async function buscarAtivosPorProtheus(protheusCode, emailUser = "") {
-    const code = String(protheusCode || "").trim();
+    const code = String(protheusCode || "").replace(/\.0$/, "").trim();
     const emailNorm = String(emailUser || "").toLowerCase().trim();
     if (!code && !emailNorm) return [];
 
-    // 1. Tentativa via Google Apps Script (Web App conectado ao Sheets/Protheus)
+    console.log(`[buscarAtivosPorProtheus] Buscando NFes para Protheus '${code}' | E-mail: '${emailNorm}'...`);
+
+    // 1. Consulta Primária ao Firestore (Direta e sem bloqueios)
+    try {
+        let docsList = [];
+
+        // 1a. Busca em /promotores/{code}/nfe_disponiveis
+        if (code) {
+            try {
+                const subcolRef1 = collection(db, "promotores", code, "nfe_disponiveis");
+                const snap1 = await getDocs(subcolRef1);
+                if (!snap1.empty) {
+                    docsList = snap1.docs;
+                    console.log(`[Firestore Query] Encontrados ${docsList.length} documentos em /promotores/${code}/nfe_disponiveis!`);
+                }
+            } catch (e) {
+                console.warn(`[Firestore Query Warning] /promotores/${code}/nfe_disponiveis:`, e.message);
+            }
+        }
+
+        // 1b. Busca em /promotores/{emailNorm}/nfe_disponiveis
+        if (docsList.length === 0 && emailNorm) {
+            try {
+                const subcolRef2 = collection(db, "promotores", emailNorm, "nfe_disponiveis");
+                const snap2 = await getDocs(subcolRef2);
+                if (!snap2.empty) {
+                    docsList = snap2.docs;
+                    console.log(`[Firestore Query] Encontrados ${docsList.length} documentos em /promotores/${emailNorm}/nfe_disponiveis!`);
+                }
+            } catch (e) {
+                console.warn(`[Firestore Query Warning] /promotores/${emailNorm}/nfe_disponiveis:`, e.message);
+            }
+        }
+
+        // 1c. Busca na coleção raiz nfe_disponiveis por codigoCliente
+        if (docsList.length === 0 && code) {
+            try {
+                let q1 = query(collection(db, "nfe_disponiveis"), where("codigoCliente", "==", code));
+                let snap3 = await getDocs(q1);
+                if (snap3.empty) {
+                    q1 = query(collection(db, "nfe_disponiveis"), where("codigoProtheus", "==", code));
+                    snap3 = await getDocs(q1);
+                }
+                if (!snap3.empty) {
+                    docsList = snap3.docs;
+                    console.log(`[Firestore Query] Encontrados ${docsList.length} documentos na raiz nfe_disponiveis por código ${code}!`);
+                }
+            } catch (e) {
+                console.warn(`[Firestore Query Warning] nfe_disponiveis por código ${code}:`, e.message);
+            }
+        }
+
+        // 1d. Busca na coleção raiz nfe_disponiveis por emailUsuario
+        if (docsList.length === 0 && emailNorm) {
+            try {
+                let q2 = query(collection(db, "nfe_disponiveis"), where("emailUsuario", "==", emailNorm));
+                let snap4 = await getDocs(q2);
+                if (snap4.empty) {
+                    q2 = query(collection(db, "nfe_disponiveis"), where("email", "==", emailNorm));
+                    snap4 = await getDocs(q2);
+                }
+                if (!snap4.empty) {
+                    docsList = snap4.docs;
+                    console.log(`[Firestore Query] Encontrados ${docsList.length} documentos na raiz nfe_disponiveis por e-mail ${emailNorm}!`);
+                }
+            } catch (e) {
+                console.warn(`[Firestore Query Warning] nfe_disponiveis por e-mail ${emailNorm}:`, e.message);
+            }
+        }
+
+        // 1e. Busca na coleção ativos_saldo por protheus
+        if (docsList.length === 0 && code) {
+            try {
+                const q3 = query(collection(db, "ativos_saldo"), where("protheus", "==", code));
+                const snap5 = await getDocs(q3);
+                if (!snap5.empty) {
+                    docsList = snap5.docs;
+                    console.log(`[Firestore Query] Encontrados ${docsList.length} documentos na coleção ativos_saldo por protheus ${code}!`);
+                }
+            } catch (e) {
+                console.warn(`[Firestore Query Warning] ativos_saldo:`, e.message);
+            }
+        }
+
+        if (docsList.length > 0) {
+            const itens = [];
+            docsList.forEach(docSnap => {
+                const d = docSnap.data();
+
+                const dateObj = d.dataEmissao?.toDate ? d.dataEmissao.toDate() : (d.dataEmissao ? new Date(d.dataEmissao) : null);
+                const dateStr = dateObj ? dateObj.toLocaleDateString('pt-BR') : (d.dataEnvioOriginal || d.dataEmissaoStr || "—");
+
+                const nfRemessaVal     = d.nfRemessa || d.numeroNfe || d.notaFiscal || d.nfe || d.numeroNota || d.nf || docSnap.id;
+                const codigoClienteVal = d.codigoCliente || d.codCliente || d.clienteId || d.codClienteProtheus || code || "—";
+                const nomeClienteVal   = d.nomeCliente || d.cliente || d.razaoSocial || d.nomeFantasia || d.destino || "Cliente não informado";
+                const produtoVal       = d.produto || d.codigoItem || d.codProduto || d.codigo || d.item || d.sku || "—";
+                const descricaoVal     = d.descricao || d.descProduto || d.descricaoItem || d.nomeProduto || "—";
+                const saldoVal         = Number(d.saldo !== undefined ? d.saldo : (d.saldoDisponivel !== undefined ? d.saldoDisponivel : (d.quantidade !== undefined ? d.quantidade : 1)));
+                const pedidoVal        = d.pedido || d.numeroPedido || d.numPedido || "Poder de Terceiros";
+                const grupoLinhaVal    = d.grupoLinha || d.grupo || "01";
+                const descGrpLinhaVal  = d.descGrpLinha || d.descGrupo || "Máquinas / Acessórios";
+
+                itens.push({
+                    id: docSnap.id,
+                    nfRemessa: nfRemessaVal,
+                    codigoCliente: codigoClienteVal,
+                    nomeCliente: nomeClienteVal,
+                    produto: produtoVal,
+                    descricao: descricaoVal,
+                    saldo: saldoVal,
+                    pedido: pedidoVal,
+                    notaFiscal: nfRemessaVal,
+                    codigoItem: produtoVal,
+                    saldoDisponivel: saldoVal,
+                    numeroSerie: d.numeroSerie || d.serie || "",
+                    dataEnvioOriginal: dateStr,
+                    grupoLinha: grupoLinhaVal,
+                    descGrpLinha: descGrpLinhaVal,
+                    status: d.status || "Disponível"
+                });
+            });
+
+            console.log(`[Firestore Live] Sucesso: ${itens.length} NFes processadas para Protheus '${code}'`);
+            return itens;
+        }
+    } catch (err) {
+        console.warn("Consulta Firestore falhou:", err.message);
+    }
+
+    // 2. Fallback via Google Apps Script (apenas se Firestore estiver vazio)
     if (GOOGLE_APPS_SCRIPT_URL && GOOGLE_APPS_SCRIPT_URL.startsWith("https://script.google.com")) {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             const url = `${GOOGLE_APPS_SCRIPT_URL}?protheus=${encodeURIComponent(code)}&email=${encodeURIComponent(emailNorm)}&action=buscar_ativos`;
             const resp = await fetch(url, { signal: controller.signal });
@@ -95,130 +224,10 @@ export async function buscarAtivosPorProtheus(protheusCode, emailUser = "") {
                 }
             }
         } catch (err) {
-            console.warn("Apps Script indisponível ou em timeout. Consultando Firestore...", err.message);
+            console.warn("Apps Script indisponível:", err.message);
         }
     }
 
-    // 2. Tentativa via Firestore: promotores >> {cód Protheus / email} >> nfe_disponiveis
-    try {
-        const firestorePromise = (async () => {
-            let docsList = [];
-
-            // 2a. Busca em promotores/{code}/nfe_disponiveis
-            if (code) {
-                try {
-                    console.log(`[Firestore Query] Consultando /promotores/${code}/nfe_disponiveis...`);
-                    const subcolRef1 = collection(db, "promotores", code, "nfe_disponiveis");
-                    const snap1 = await getDocs(subcolRef1);
-                    if (!snap1.empty) {
-                        docsList = snap1.docs;
-                        console.log(`[Firestore Query] Encontrados ${docsList.length} documentos em /promotores/${code}/nfe_disponiveis!`);
-                    }
-                } catch (e) {
-                    console.warn(`[Firestore Query Warning] /promotores/${code}/nfe_disponiveis:`, e.message);
-                }
-            }
-
-            // 2b. Busca em promotores/{email}/nfe_disponiveis
-            if (docsList.length === 0 && emailNorm) {
-                try {
-                    console.log(`[Firestore Query] Consultando /promotores/${emailNorm}/nfe_disponiveis...`);
-                    const subcolRef2 = collection(db, "promotores", emailNorm, "nfe_disponiveis");
-                    const snap2 = await getDocs(subcolRef2);
-                    if (!snap2.empty) {
-                        docsList = snap2.docs;
-                        console.log(`[Firestore Query] Encontrados ${docsList.length} documentos em /promotores/${emailNorm}/nfe_disponiveis!`);
-                    }
-                } catch (e) {
-                    console.warn(`[Firestore Query Warning] /promotores/${emailNorm}/nfe_disponiveis:`, e.message);
-                }
-            }
-
-            // 2c. Busca na coleção raiz nfe_disponiveis por codigoCliente ou codigoProtheus
-            if (docsList.length === 0 && code) {
-                try {
-                    let q1 = query(collection(db, "nfe_disponiveis"), where("codigoCliente", "==", code));
-                    let snap3 = await getDocs(q1);
-                    if (snap3.empty) {
-                        q1 = query(collection(db, "nfe_disponiveis"), where("codigoProtheus", "==", code));
-                        snap3 = await getDocs(q1);
-                    }
-                    if (!snap3.empty) {
-                        docsList = snap3.docs;
-                        console.log(`[Firestore Query] Encontrados ${docsList.length} documentos na raiz nfe_disponiveis por código ${code}!`);
-                    }
-                } catch (e) {
-                    console.warn(`[Firestore Query Warning] nfe_disponiveis por código ${code}:`, e.message);
-                }
-            }
-
-            // 2d. Busca na coleção raiz nfe_disponiveis por emailUsuario ou email
-            if (docsList.length === 0 && emailNorm) {
-                try {
-                    let q2 = query(collection(db, "nfe_disponiveis"), where("emailUsuario", "==", emailNorm));
-                    let snap4 = await getDocs(q2);
-                    if (snap4.empty) {
-                        q2 = query(collection(db, "nfe_disponiveis"), where("email", "==", emailNorm));
-                        snap4 = await getDocs(q2);
-                    }
-                    if (!snap4.empty) {
-                        docsList = snap4.docs;
-                        console.log(`[Firestore Query] Encontrados ${docsList.length} documentos na raiz nfe_disponiveis por e-mail ${emailNorm}!`);
-                    }
-                } catch (e) {
-                    console.warn(`[Firestore Query Warning] nfe_disponiveis por e-mail ${emailNorm}:`, e.message);
-                }
-            }
-
-            if (docsList.length > 0) {
-                const itens = [];
-                docsList.forEach(docSnap => {
-                    const d = docSnap.data();
-
-                    const dateObj = d.dataEmissao?.toDate ? d.dataEmissao.toDate() : (d.dataEmissao ? new Date(d.dataEmissao) : null);
-                    const dateStr = dateObj ? dateObj.toLocaleDateString('pt-BR') : (d.dataEnvioOriginal || d.dataEmissaoStr || "—");
-
-                    const nfRemessaVal     = d.nfRemessa || d.numeroNfe || d.notaFiscal || d.nfe || d.numeroNota || d.nf || docSnap.id;
-                    const codigoClienteVal = d.codigoCliente || d.codCliente || d.clienteId || d.codClienteProtheus || "—";
-                    const nomeClienteVal   = d.nomeCliente || d.cliente || d.razaoSocial || d.nomeFantasia || d.destino || "Cliente não informado";
-                    const produtoVal       = d.produto || d.codigoItem || d.codProduto || d.codigo || d.item || d.sku || "—";
-                    const descricaoVal     = d.descricao || d.descProduto || d.descricaoItem || d.nomeProduto || "—";
-                    const saldoVal         = Number(d.saldo !== undefined ? d.saldo : (d.saldoDisponivel !== undefined ? d.saldoDisponivel : (d.quantidade !== undefined ? d.quantidade : 1)));
-                    const pedidoVal        = d.pedido || d.numeroPedido || d.numPedido || "Poder de Terceiros";
-
-                    itens.push({
-                        id: docSnap.id,
-                        nfRemessa: nfRemessaVal,
-                        codigoCliente: codigoClienteVal,
-                        nomeCliente: nomeClienteVal,
-                        produto: produtoVal,
-                        descricao: descricaoVal,
-                        saldo: saldoVal,
-                        pedido: pedidoVal,
-                        notaFiscal: nfRemessaVal,
-                        codigoItem: produtoVal,
-                        saldoDisponivel: saldoVal,
-                        numeroSerie: d.numeroSerie || d.serie || "",
-                        dataEnvioOriginal: dateStr,
-                        status: d.status || "Disponível"
-                    });
-                });
-                return itens;
-            }
-            return null;
-        })();
-
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
-        const itensFirestore = await Promise.race([firestorePromise, timeoutPromise]);
-        if (itensFirestore && itensFirestore.length > 0) {
-            console.log(`[Firestore Live] Sucesso: ${itensFirestore.length} NFes carregadas para Protheus '${code}'`);
-            return itensFirestore;
-        }
-    } catch (err) {
-        console.warn("Consulta Firestore 'promotores/.../nfe_disponiveis' falhou:", err.message);
-    }
-
-    // Se não houver itens no Firestore, retorna lista vazia
     return [];
 }
 

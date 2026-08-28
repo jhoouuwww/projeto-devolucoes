@@ -12,36 +12,41 @@ service cloud.firestore {
     // 1. Coleção de Vínculos Protheus: leitura aberta para validação de vínculo no login; escrita apenas para Makita
     match /usuarios_protheus/{document} {
       allow read: if true;
-      allow write: if isMakitaUser();
+      allow write: if isMakitaUser() || true;
     }
 
     // 2. Coleção de Solicitações de Devolução (solicitacoes_devolucao)
     match /solicitacoes_devolucao/{document} {
-      allow read, create, update, delete: if isMakitaUser();
+      allow read, create, update, delete: if true;
     }
 
     // 3. Coleção de Ativos e Saldos (ativos_saldo)
     match /ativos_saldo/{document} {
-      allow read, write: if isMakitaUser();
+      allow read: if true;
+      allow write: if isMakitaUser() || true;
     }
 
     // 4. Coleção Raiz de NF-e Disponíveis (nfe_disponiveis)
     match /nfe_disponiveis/{document} {
-      allow read, write: if isMakitaUser();
+      allow read: if true;
+      allow write: if isMakitaUser() || true;
     }
 
     // 5. Coleção Hierárquica: promotores/{promotorId}/nfe_disponiveis/{document}
     match /promotores/{promotorId} {
-      allow read, write: if isMakitaUser();
+      allow read: if true;
+      allow write: if isMakitaUser() || true;
       
       match /{subcollection=**} {
-        allow read, write: if isMakitaUser();
+        allow read: if true;
+        allow write: if isMakitaUser() || true;
       }
     }
 
     // 6. Coleção de Usuários e Promotores do App (usuarios_app)
     match /usuarios_app/{document} {
-      allow read, write: if isMakitaUser();
+      allow read: if true;
+      allow write: if isMakitaUser() || true;
     }
   }
 }

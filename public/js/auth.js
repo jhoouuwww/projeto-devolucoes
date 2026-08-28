@@ -87,20 +87,52 @@ export async function buscarVinculoProtheus(inputStr) {
         };
     }
 
-    // 3. Se não encontrou na base local, busca no Firestore (Coleção 'usuarios_protheus')
+    // 3. Se não encontrou na base local, busca no Firestore (Coleções 'usuarios_protheus' e 'usuarios_app')
     try {
         const firestorePromise = (async () => {
+            // 3a. Busca direta por ID em usuarios_protheus
             const docRef = doc(db, "usuarios_protheus", term);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 return {
                     protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(".", " "),
+                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
                     filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Colaborador",
+                    cargo: data.cargo || "Promotor Técnico",
                     isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
                     email: data.email || term
+                };
+            }
+
+            // 3b. Busca direta por ID (código protheus) em usuarios_app
+            const docAppRef = doc(db, "usuarios_app", term);
+            const docAppSnap = await getDoc(docAppRef);
+            if (docAppSnap.exists()) {
+                const data = docAppSnap.data();
+                const userEmail = data.email || `${term}@makita.com.br`;
+                return {
+                    protheus: String(data.codigoProtheus || term).trim(),
+                    nome: userEmail.split("@")[0].replace(/[._-]/g, " "),
+                    filial: "01 - Matriz",
+                    cargo: "Promotor Técnico",
+                    isAdmin: ADMIN_EMAILS.includes(userEmail),
+                    email: userEmail
+                };
+            }
+
+            // 3c. Query em usuarios_app por email
+            const qApp = query(collection(db, "usuarios_app"), where("email", "==", term));
+            const qAppSnap = await getDocs(qApp);
+            if (!qAppSnap.empty) {
+                const data = qAppSnap.docs[0].data();
+                return {
+                    protheus: String(data.codigoProtheus || qAppSnap.docs[0].id).trim(),
+                    nome: term.split("@")[0].replace(/[._-]/g, " "),
+                    filial: "01 - Matriz",
+                    cargo: "Promotor Técnico",
+                    isAdmin: ADMIN_EMAILS.includes(term),
+                    email: term
                 };
             }
 
@@ -110,9 +142,9 @@ export async function buscarVinculoProtheus(inputStr) {
                 const data = qSnap1.docs[0].data();
                 return {
                     protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(".", " "),
+                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
                     filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Colaborador",
+                    cargo: data.cargo || "Promotor Técnico",
                     isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
                     email: data.email || term
                 };
@@ -124,9 +156,9 @@ export async function buscarVinculoProtheus(inputStr) {
                 const data = qSnap2.docs[0].data();
                 return {
                     protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(".", " "),
+                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
                     filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Colaborador",
+                    cargo: data.cargo || "Promotor Técnico",
                     isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
                     email: data.email || term
                 };
@@ -134,7 +166,7 @@ export async function buscarVinculoProtheus(inputStr) {
             return null;
         })();
 
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 800));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
         const resultadoFirestore = await Promise.race([firestorePromise, timeoutPromise]);
         if (resultadoFirestore && resultadoFirestore.protheus) {
             return resultadoFirestore;
