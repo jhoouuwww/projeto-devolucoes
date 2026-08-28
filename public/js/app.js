@@ -1199,7 +1199,7 @@ function renderEtapa4Resumo() {
         if (elLogDetalhe) elLogDetalhe.textContent = filial || "Filial não especificada";
     } else if (tipo === "braspress_retira") {
         const ret = DevolucaoState.logistica.braspressRetira;
-        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-amber-700 flex items-center gap-1.5"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
+        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
         if (elLogDetalhe) elLogDetalhe.textContent = `${ret.logradouro || ''}, ${ret.numero || ''} - ${ret.bairro || ''} (${ret.cidade || ''}/${ret.uf || ''}) — CEP: ${ret.cep || ''}`;
     } else if (tipo === "filial_makita") {
         const mak = DevolucaoState.logistica.filialMakita;
@@ -2566,7 +2566,7 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
             if (elLogEnd) elLogEnd.textContent = "Entrega direta na filial Braspress selecionada";
         } else if (sol.logistica?.tipo === "braspress_retira") {
             const ret = sol.logistica?.braspressRetira;
-            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-amber-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
             if (elLogDestino) elLogDestino.textContent = `Coleta: ${ret?.logradouro || "-"}, ${ret?.numero || "-"} - ${ret?.bairro || "-"}`;
             if (elLogEnd) elLogEnd.textContent = `${ret?.cidade || "-"}/${ret?.uf || "-"} — CEP: ${ret?.cep || "-"} ${ret?.telefone ? '— Tel: ' + ret.telefone : ''}`;
         } else if (sol.logistica?.tipo === "filial_makita") {
