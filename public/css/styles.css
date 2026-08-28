@@ -222,6 +222,7 @@ body {
     border: 1px solid #e2e8f0;
     overflow-x: auto;
     width: 100%;
+    min-height: 280px;
 }
 
 table {
