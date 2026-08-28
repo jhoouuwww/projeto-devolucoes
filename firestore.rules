@@ -9,43 +9,32 @@ service cloud.firestore {
               request.auth.token.email.matches('.*@makitabr[.]onmicrosoft[.]com$'));
     }
 
-    // Helper: Administrador exclusivo do sistema
-    function isAdmUser() {
-      return isMakitaUser() && request.auth.token.email == 'j_melgaco@makita.com.br';
-    }
-
     // 1. Coleção de Vínculos Protheus (usuarios_protheus)
     match /usuarios_protheus/{document} {
-      allow read: if isMakitaUser();
-      allow write: if isMakitaUser();
+      allow read, write: if isMakitaUser();
     }
 
     // 2. Coleção de Solicitações de Devolução (solicitacoes_devolucao)
     match /solicitacoes_devolucao/{document} {
-      allow read: if isMakitaUser();
-      allow create, update, delete: if isMakitaUser();
+      allow read, create, update, delete: if isMakitaUser();
     }
 
     // 3. Coleção de Ativos e Saldos (ativos_saldo)
     match /ativos_saldo/{document} {
-      allow read: if isMakitaUser();
-      allow write: if isMakitaUser();
+      allow read, write: if isMakitaUser();
     }
 
     // 4. Coleção Raiz de NF-e Disponíveis (nfe_disponiveis)
     match /nfe_disponiveis/{document} {
-      allow read: if isMakitaUser();
-      allow write: if isMakitaUser();
+      allow read, write: if isMakitaUser();
     }
 
     // 5. Coleção Hierárquica: promotores/{promotorId}/nfe_disponiveis/{document}
     match /promotores/{promotorId} {
-      allow read: if isMakitaUser();
-      allow write: if isMakitaUser();
+      allow read, write: if isMakitaUser();
       
       match /{subcollection=**} {
-        allow read: if isMakitaUser();
-        allow write: if isMakitaUser();
+        allow read, write: if isMakitaUser();
       }
     }
   }
