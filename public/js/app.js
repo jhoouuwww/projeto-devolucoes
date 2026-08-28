@@ -1848,12 +1848,28 @@ export async function handleMsLogin() {
         }
     }
 
-    const term = (inputEl?.value || "").trim().toLowerCase();
-    console.log("[Makita Login] Clique / Enter detectado no login. Termo digitado:", term);
+    const emailInput = (inputEl?.value || "").trim().toLowerCase();
+    console.log("[Makita Login] Clique / Enter detectado no login. Termo digitado:", emailInput);
     clearLoginErr();
 
-    if (!term) {
-        showLoginErr("Insira um endereço de e-mail corporativo ou código Protheus.");
+    // 1. Validação de campo vazio
+    if (!emailInput) {
+        showLoginErr("Insira o seu endereço de e-mail corporativo completo.");
+        inputEl?.focus();
+        return;
+    }
+
+    // 2. Validação de formato (deve conter @)
+    if (!emailInput.includes("@")) {
+        showLoginErr("Insira o endereço de e-mail corporativo completo (exemplo: usuario@makita.com.br).");
+        inputEl?.focus();
+        return;
+    }
+
+    // 3. Validação estrita de domínio corporativo (@makita.com.br / @makitabr.onmicrosoft.com)
+    const isDomainMakita = emailInput.endsWith("@makita.com.br") || emailInput.endsWith("@makitabr.onmicrosoft.com");
+    if (!isDomainMakita) {
+        showLoginErr("Acesso não permitido: Apenas contas corporativas (@makita.com.br) são autorizadas.");
         inputEl?.focus();
         return;
     }
@@ -1861,19 +1877,18 @@ export async function handleMsLogin() {
     setBtnLoading(true);
 
     try {
-        console.log("[Makita Login] Buscando vínculo Protheus para:", term);
-        const vinculo = await buscarVinculoProtheus(term);
+        console.log("[Makita Login] Buscando vínculo Protheus para:", emailInput);
+        const vinculo = await buscarVinculoProtheus(emailInput);
         console.log("[Makita Login] Resultado do vínculo:", vinculo);
 
         if (!vinculo) {
             setBtnLoading(false);
-            showLoginErr(`O utilizador "${term}" não foi encontrado na base autorizada da Makita.`);
+            showLoginErr(`O e-mail "${emailInput}" não foi encontrado na base autorizada de promotores da Makita.`);
             return;
         }
 
-        const loginUser = vinculo.email || (term.includes("@") ? term : `${term}@makita.com.br`);
-        console.log("[Makita Login] Realizando login simulado para:", loginUser);
-        await simularLogin(loginUser);
+        console.log("[Makita Login] Realizando login para:", vinculo.email || emailInput);
+        await simularLogin(vinculo.email || emailInput);
         console.log("[Makita Login] Login simulado concluído com sucesso!");
 
     } catch (err) {
