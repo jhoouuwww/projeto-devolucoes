@@ -182,7 +182,6 @@ export async function buscarVinculoProtheus(inputStr) {
     // Se não encontrou em nenhuma base autorizada, retorna null
     return null;
 }
-}
 
 /**
  * Validação e Processamento de Usuário Logado
