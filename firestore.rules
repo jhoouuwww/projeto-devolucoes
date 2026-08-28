@@ -2,37 +2,50 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regra para vínculos de usuário (E-mail -> Código Protheus)
+    // Helper: Garante que a requisição venha de um usuário autenticado com e-mail corporativo Makita
+    function isMakitaUser() {
+      return request.auth != null && 
+             (request.auth.token.email.matches('.*@makita[.]com[.]br$') || 
+              request.auth.token.email.matches('.*@makitabr[.]onmicrosoft[.]com$'));
+    }
+
+    // Helper: Administrador exclusivo do sistema
+    function isAdmUser() {
+      return isMakitaUser() && request.auth.token.email == 'j_melgaco@makita.com.br';
+    }
+
+    // 1. Coleção de Vínculos Protheus (usuarios_protheus)
     match /usuarios_protheus/{document} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email.matches('.*@makita[.]com[.]br$');
+      allow read: if isMakitaUser();
+      allow write: if isMakitaUser();
     }
 
-    // Regra para solicitações de devolução
+    // 2. Coleção de Solicitações de Devolução (solicitacoes_devolucao)
     match /solicitacoes_devolucao/{document} {
-      allow read: if true;
-      allow create, update, delete: if true;
+      allow read: if isMakitaUser();
+      allow create, update, delete: if isMakitaUser();
     }
 
-    // Regra para base de ativos e saldos em estoque
+    // 3. Coleção de Ativos e Saldos (ativos_saldo)
     match /ativos_saldo/{document} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email.matches('.*@makita[.]com[.]br$');
+      allow read: if isMakitaUser();
+      allow write: if isMakitaUser();
     }
 
-    // Regra para Notas Fiscais disponíveis para devolução (coleção raiz)
+    // 4. Coleção Raiz de NF-e Disponíveis (nfe_disponiveis)
     match /nfe_disponiveis/{document} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isMakitaUser();
+      allow write: if isMakitaUser();
     }
 
-    // Regra para estrutura hierárquica: promotores/{cód Protheus}/nfe_disponiveis
+    // 5. Coleção Hierárquica: promotores/{promotorId}/nfe_disponiveis/{document}
     match /promotores/{promotorId} {
-      allow read: if true;
-      allow write: if true;
-      match /nfe_disponiveis/{document} {
-        allow read: if true;
-        allow write: if true;
+      allow read: if isMakitaUser();
+      allow write: if isMakitaUser();
+      
+      match /{subcollection=**} {
+        allow read: if isMakitaUser();
+        allow write: if isMakitaUser();
       }
     }
   }
