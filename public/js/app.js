@@ -1069,13 +1069,28 @@ function _filtrarERenderizarAdmGeral() {
     }
 
     // Atualiza KPIs Principais
+    // 1. Total de Solicitações: quantidade total de solicitações lançadas pelos usuários
     const totalSolic = filtradas.length;
+
+    // 2. Ativos / Itens Devolvidos: quantidade total de ativos/itens solicitados para devolução
     const totalItens = filtradas.reduce((acc, s) => {
-        const q = s.itens ? s.itens.reduce((sum, it) => sum + Number(it.quantidadeDevolvida || 1), 0) : Number(s.totalItens || 0);
+        const q = s.itens ? s.itens.reduce((sum, it) => sum + Number(it.quantidadeDevolvida || it.quantidade || 1), 0) : Number(s.totalItens || 0);
         return acc + q;
     }, 0);
-    const totalBraspress = filtradas.filter(s => s.logistica?.tipo === "braspress").length;
-    const totalRegional = filtradas.filter(s => s.logistica?.tipo === "transportadora_regional").length;
+
+    // 3. Despacho Braspress: quantidade de solicitações Braspress cujo status foi alterado dentro do botão ações
+    const totalBraspress = filtradas.filter(s => {
+        const isBraspress = (s.logistica?.tipo === "braspress" || s.status === "brasspress");
+        const statusAlterado = (s.status && s.status !== "pendente") || (Array.isArray(s.historico_status) && s.historico_status.length > 0);
+        return isBraspress && statusAlterado;
+    }).length;
+
+    // 4. Transp. Regionais: quantidade de solicitações Regionais cujo status foi alterado dentro do botão ações
+    const totalRegional = filtradas.filter(s => {
+        const isRegional = (s.logistica?.tipo === "transportadora_regional" || (s.logistica?.tipo !== "braspress" && s.status !== "brasspress"));
+        const statusAlterado = (s.status && s.status !== "pendente") || (Array.isArray(s.historico_status) && s.historico_status.length > 0);
+        return isRegional && statusAlterado;
+    }).length;
 
     const elKpiSolic = document.getElementById("adm-main-kpi-total-solic");
     if (elKpiSolic) elKpiSolic.textContent = totalSolic;
