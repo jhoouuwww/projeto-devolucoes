@@ -843,6 +843,28 @@ function renderEtapa4Resumo() {
     document.getElementById("resumo-obs-gerais").textContent = DevolucaoState.observacoesGerais || "Sem observações adicionais.";
 }
 
+let _modalSucessoTimer = null;
+
+export function fecharModalSucesso() {
+    if (_modalSucessoTimer) {
+        clearTimeout(_modalSucessoTimer);
+        _modalSucessoTimer = null;
+    }
+    const modal = document.getElementById("modal-sucesso-devolucao");
+    if (modal && !modal.classList.contains("hidden")) {
+        modal.classList.add("hidden");
+        _nfeListenersAttached = false;
+        _nfeSearchTerm = "";
+        _nfeFilterField = "todos";
+        reiniciarFluxoDevolucao();
+        carregarItensDoUsuario().then(() => {
+            renderFluxoDevolucao();
+            renderMiniRelatorioAtivos();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
+}
+
 /**
  * Modal de Confirmação de Sucesso da Devolução
  */
@@ -859,7 +881,10 @@ function exibirModalSucessoDevolucao(sol) {
     const elVolumes = document.getElementById("modal-sucesso-volumes");
     const elListaItens = document.getElementById("modal-sucesso-itens-lista");
 
-    if (elNome) elNome.textContent = solicitanteNome;
+    if (elNome) {
+        elNome.textContent = solicitanteNome;
+        elNome.title = solicitanteNome;
+    }
     if (elProtheus) elProtheus.textContent = protheusCode;
     if (elVolumes) elVolumes.textContent = `${qtdVolumes} ${qtdVolumes > 1 ? 'caixas' : 'caixa'}`;
 
@@ -877,15 +902,15 @@ function exibirModalSucessoDevolucao(sol) {
                 const qtd = it.quantidadeDevolvida || it.quantidade || it.saldo || 1;
 
                 return `
-                    <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs">
-                        <div class="min-w-0 flex-1 pr-2">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#008497]">${cod}</span>
-                                <span class="text-[10px] text-slate-400 font-mono">NF: ${nf}</span>
+                    <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 whitespace-nowrap">
+                                <span class="font-mono font-bold text-[#008497] shrink-0">${cod}</span>
+                                <span class="text-[10px] text-slate-400 font-mono shrink-0">NF: ${nf}</span>
                             </div>
-                            <p class="text-[11px] text-slate-600 truncate mt-0.5">${desc}</p>
+                            <p class="text-[11px] text-slate-600 truncate mt-0.5 whitespace-nowrap" title="${desc}">${desc}</p>
                         </div>
-                        <span class="bg-teal-50 text-[#008497] font-bold px-2 py-0.5 rounded text-[11px] shrink-0 border border-teal-200/80">
+                        <span class="bg-teal-50 text-[#008497] font-bold px-2 py-0.5 rounded text-[11px] shrink-0 border border-teal-200/80 whitespace-nowrap">
                             ${qtd} un
                         </span>
                     </div>
@@ -898,6 +923,17 @@ function exibirModalSucessoDevolucao(sol) {
 
     // Exibe o modal centralizado com backdrop
     modal.classList.remove("hidden");
+
+    // Limpa timer anterior caso exista
+    if (_modalSucessoTimer) {
+        clearTimeout(_modalSucessoTimer);
+        _modalSucessoTimer = null;
+    }
+
+    // Auto-close em no máximo 10 segundos
+    _modalSucessoTimer = setTimeout(() => {
+        fecharModalSucesso();
+    }, 10000);
 }
 
 /**
@@ -1478,19 +1514,9 @@ function initEventListeners() {
         }
     });
 
-    // 7. Botão Nova Devolução dentro do Modal de Sucesso
-    document.getElementById("btn-modal-nova-devolucao")?.addEventListener("click", () => {
-        document.getElementById("modal-sucesso-devolucao")?.classList.add("hidden");
-        _nfeListenersAttached = false;
-        _nfeSearchTerm = "";
-        _nfeFilterField = "todos";
-        reiniciarFluxoDevolucao();
-        carregarItensDoUsuario().then(() => {
-            renderFluxoDevolucao();
-            renderMiniRelatorioAtivos();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-    });
+    // 7. Botão Nova Devolução e Botão X de fechar dentro do Modal de Sucesso
+    document.getElementById("btn-modal-nova-devolucao")?.addEventListener("click", fecharModalSucesso);
+    document.getElementById("btn-fechar-modal-sucesso-x")?.addEventListener("click", fecharModalSucesso);
 
     // 8.1. Busca por CEP para encontrar a Filial Braspress mais próxima
     const btnBuscarCep = document.getElementById("btn-buscar-cep-braspress");
