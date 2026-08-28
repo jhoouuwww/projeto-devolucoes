@@ -2340,28 +2340,10 @@ function initEventListeners() {
     });
 
     // Modal Cadastrar Promotor com Auto-Sync de NF-e
-    const modalCadPromotor = document.getElementById("modal-cadastrar-promotor");
     const btnAbrirCadPromotor = document.getElementById("btn-abrir-modal-cadastrar-promotor");
     const btnFecharCadPromotor = document.getElementById("btn-fechar-modal-cad-promotor");
     const btnCancelarCadPromotor = document.getElementById("btn-cancelar-cad-promotor");
     const formCadPromotor = document.getElementById("form-cadastrar-promotor");
-
-    export function abrirModalCadastrarPromotor() {
-        const modalCadPromotor = document.getElementById("modal-cadastrar-promotor");
-        const formCadPromotor = document.getElementById("form-cadastrar-promotor");
-        if (modalCadPromotor) {
-            formCadPromotor?.reset();
-            document.getElementById("cad-promotor-status-msg")?.classList.add("hidden");
-            modalCadPromotor.classList.remove("hidden");
-        }
-    }
-    window.abrirModalCadastrarPromotor = abrirModalCadastrarPromotor;
-
-    export function fecharModalCadPromotor() {
-        const modalCadPromotor = document.getElementById("modal-cadastrar-promotor");
-        if (modalCadPromotor) modalCadPromotor.classList.add("hidden");
-    }
-    window.fecharModalCadPromotor = fecharModalCadPromotor;
 
     btnAbrirCadPromotor?.addEventListener("click", abrirModalCadastrarPromotor);
     btnFecharCadPromotor?.addEventListener("click", fecharModalCadPromotor);
