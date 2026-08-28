@@ -740,7 +740,7 @@ function renderEtapa2Volumes() {
                     <span class="font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 whitespace-nowrap shrink-0">${it.codigoItem}</span>
                     <span class="text-slate-800 font-medium leading-relaxed break-words flex-1">${it.descricao}</span>
                 </div>
-                <span class="font-bold text-[#008497] bg-teal-50 px-2 py-0.5 rounded border border-teal-200 whitespace-nowrap shrink-0 self-start sm:self-center">${it.quantidadeDevolvida} un</span>
+                <span class="font-bold text-[#008497] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 whitespace-nowrap shrink-0 self-start sm:self-center">${it.quantidadeDevolvida} un</span>
             </div>
         `).join("");
     }
@@ -813,7 +813,7 @@ function renderEtapa4Resumo() {
                 <td class="p-3 text-center font-mono text-slate-700 whitespace-nowrap">${it.notaFiscal || "-"}</td>
                 <td class="p-3 text-center font-mono text-slate-600 whitespace-nowrap">${it.pedido || "-"}</td>
                 <td class="p-3 text-center whitespace-nowrap">
-                    <span class="font-bold text-[#008497] bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200 text-xs inline-block">
+                    <span class="font-bold text-[#008497] bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 text-xs inline-block">
                         ${it.quantidadeDevolvida} un
                     </span>
                 </td>
@@ -910,7 +910,7 @@ function exibirModalSucessoDevolucao(sol) {
                             </div>
                             <p class="text-[11px] text-slate-600 truncate mt-0.5 whitespace-nowrap" title="${desc}">${desc}</p>
                         </div>
-                        <span class="bg-teal-50 text-[#008497] font-bold px-2 py-0.5 rounded text-[11px] shrink-0 border border-teal-200/80 whitespace-nowrap">
+                        <span class="bg-[#008497] text-white font-bold px-2.5 py-0.5 rounded text-[11px] shrink-0 whitespace-nowrap shadow-2xs">
                             ${qtd} un
                         </span>
                     </div>
@@ -1625,16 +1625,16 @@ function initEventListeners() {
 
     dropzone?.addEventListener("dragover", (e) => {
         e.preventDefault();
-        dropzone.classList.add("border-[#008497]", "bg-teal-50/50");
+        dropzone.classList.add("border-[#008497]", "bg-slate-100/60");
     });
 
     dropzone?.addEventListener("dragleave", () => {
-        dropzone.classList.remove("border-[#008497]", "bg-teal-50/50");
+        dropzone.classList.remove("border-[#008497]", "bg-slate-100/60");
     });
 
     dropzone?.addEventListener("drop", async (e) => {
         e.preventDefault();
-        dropzone.classList.remove("border-[#008497]", "bg-teal-50/50");
+        dropzone.classList.remove("border-[#008497]", "bg-slate-100/60");
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             await processarArquivoUpload(e.dataTransfer.files[0]);
         }
@@ -1663,7 +1663,7 @@ function initEventListeners() {
                 <td class="p-2 font-mono">${d.notaFiscal}</td>
                 <td class="p-2 font-mono">${d.pedido}</td>
                 <td class="p-2 font-bold text-center">${d.saldoDisponivel}</td>
-                <td class="p-2 font-mono text-center text-teal-700">${d.protheus}</td>
+                <td class="p-2 font-mono text-center text-[#008497] font-semibold">${d.protheus}</td>
             </tr>
         `).join("");
 
@@ -1691,7 +1691,7 @@ function initEventListeners() {
                 <td class="p-2 font-mono">${d.notaFiscal}</td>
                 <td class="p-2 font-mono">${d.pedido}</td>
                 <td class="p-2 font-bold text-center">${d.saldoDisponivel}</td>
-                <td class="p-2 font-mono text-center text-teal-700">${d.protheus}</td>
+                <td class="p-2 font-mono text-center text-[#008497] font-semibold">${d.protheus}</td>
             </tr>
         `).join("");
 
