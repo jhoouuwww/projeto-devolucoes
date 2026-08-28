@@ -55,6 +55,10 @@ body {
     font-family: 'IBM Plex Mono', monospace;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Botões do Sistema */
 .btn-primary {
     background-color: #008497;

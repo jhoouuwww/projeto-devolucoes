@@ -2073,104 +2073,151 @@ let _modalDetalhesCurrentSol = null;
 }
 
 /**
+ * Função utilitária interna para localizar qualquer solicitação por ID, Protocolo ou Objeto
+ */
+function _buscarSolicitacaoPorId(idOuProt) {
+    if (!idOuProt) return null;
+    if (typeof idOuProt === 'object') return idOuProt;
+    const cleanId = String(idOuProt || "").trim().toLowerCase();
+    const todasListas = [
+        ...(_todasSolicitacoesCache || []),
+        ...(AdminState?.todasSolicitacoes || []),
+        ...(HistoricoState?.solicitacoes || [])
+    ];
+    let found = todasListas.find(s => {
+        if (!s) return false;
+        const sid = String(s.id || "").trim().toLowerCase();
+        const sprot = String(s.protocolo || "").trim().toLowerCase();
+        const sprotNum = sprot.replace(/^#/, "");
+        const cleanNum = cleanId.replace(/^#/, "");
+
+        return sid === cleanId || 
+               sprot === cleanId || 
+               (cleanNum && sprotNum === cleanNum) ||
+               (cleanId && (sid.includes(cleanId) || sprot.includes(cleanId)));
+    });
+    if (!found) {
+        try {
+            const locais = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
+            found = locais.find(s => {
+                const sid = String(s.id || "").trim().toLowerCase();
+                const sprot = String(s.protocolo || "").trim().toLowerCase();
+                return sid === cleanId || sprot === cleanId || sprot.replace(/^#/, "") === cleanId.replace(/^#/, "");
+            });
+        } catch (e) {}
+    }
+    return found;
+}
+
+/**
  * Abre o Modal Pop-up Moderno com Detalhes Completos da Solicitação (Sem Emojis, com FontAwesome Icons)
  */
 export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
-    const sol = (_todasSolicitacoesCache || []).find(s => s.id === idOuProtocolo || s.protocolo === idOuProtocolo) ||
-                (HistoricoState.solicitacoes || []).find(s => s.id === idOuProtocolo || s.protocolo === idOuProtocolo);
+    const sol = _buscarSolicitacaoPorId(idOuProtocolo);
     
     if (!sol) {
-        showToast("Solicitação não encontrada.", "warning");
+        console.warn("[abrirModalDetalhesSolicitacao] Solicitação não encontrada para ID:", idOuProtocolo);
+        showToast("Solicitação não encontrada no momento. Tente atualizar a lista.", "warning");
         return;
     }
 
     _modalDetalhesCurrentSol = sol;
 
     const modal = document.getElementById("modal-detalhes-solicitacao");
-    if (!modal) return;
-
-    const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR");
-    const solicitanteNome = sol.solicitante?.nome || sol.solicitante?.email?.split("@")[0] || "Promotor";
-    const solicitanteEmail = sol.solicitante?.email || "-";
-    const protheus = sol.solicitante?.protheus || "-";
-    const filial = sol.solicitante?.filial || "01 - Matriz";
-    const caixas = sol.volumes?.quantidadeCaixas || 1;
-    const totalQtd = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
-
-    // Preenche cabeçalho
-    const badgeProt = document.getElementById("modal-detalhes-protocolo-badge");
-    if (badgeProt) badgeProt.textContent = sol.protocolo || "S/ PROTOCOLO";
-
-    const badgeStatus = document.getElementById("modal-detalhes-status-badge");
-    if (badgeStatus) {
-        const stObj = normalizarStatus(sol.status);
-        badgeStatus.className = `badge ${stObj.badgeClass}`;
-        badgeStatus.innerHTML = `<i class="${stObj.icon} text-xs"></i> <span>${stObj.label}</span>`;
+    if (!modal) {
+        console.error("Modal element #modal-detalhes-solicitacao não encontrado no DOM!");
+        return;
     }
 
-    // Preenche cards
-    const elNome = document.getElementById("modal-det-nome");
-    if (elNome) elNome.textContent = solicitanteNome;
-    const elEmail = document.getElementById("modal-det-email");
-    if (elEmail) elEmail.textContent = solicitanteEmail;
-    const elProt = document.getElementById("modal-det-protheus");
-    if (elProt) elProt.textContent = protheus;
+    try {
+        const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR");
+        const solicitanteNome = sol.solicitante?.nome || sol.solicitante?.email?.split("@")[0] || "Promotor";
+        const solicitanteEmail = sol.solicitante?.email || "-";
+        const protheus = sol.solicitante?.protheus || "-";
+        const caixas = sol.volumes?.quantidadeCaixas || 1;
+        const totalQtd = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
 
-    const elLogTipo = document.getElementById("modal-det-log-tipo");
-    const elLogDestino = document.getElementById("modal-det-log-destino");
-    const elLogEnd = document.getElementById("modal-det-log-endereco");
+        // Preenche cabeçalho
+        const badgeProt = document.getElementById("modal-detalhes-protocolo-badge");
+        if (badgeProt) badgeProt.textContent = sol.protocolo || "S/ PROTOCOLO";
 
-    if (sol.logistica?.tipo === "braspress") {
-        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-warehouse"></i> Braspress</span>`;
-        if (elLogDestino) elLogDestino.textContent = sol.logistica?.filialBraspress || "Filial não informada";
-        if (elLogEnd) elLogEnd.textContent = "Entrega direta na filial Braspress selecionada";
-    } else {
-        const regNome = sol.logistica?.transportadoraRegional?.nome || "Transportadora Regional";
-        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-amber-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-ramp-box"></i> Transportadora Regional</span>`;
-        if (elLogDestino) elLogDestino.textContent = regNome;
-        if (elLogEnd) elLogEnd.textContent = `Origem: ${sol.logistica?.cidadeOrigem || "-"} / ${sol.logistica?.ufOrigem || "-"}`;
-    }
-
-    const elData = document.getElementById("modal-det-data");
-    if (elData) elData.textContent = dataFmt;
-    const elVol = document.getElementById("modal-det-volumes");
-    if (elVol) elVol.textContent = `${caixas} cx`;
-    const elTotItens = document.getElementById("modal-det-total-itens");
-    if (elTotItens) elTotItens.textContent = `${totalQtd} ${totalQtd === 1 ? 'item' : 'itens'}`;
-
-    const elObs = document.getElementById("modal-det-observacoes");
-    if (elObs) elObs.textContent = sol.observacoesGerais || "Nenhuma observação registrada.";
-
-    // Preenche tabela de itens
-    const tbody = document.getElementById("modal-det-tbody-itens");
-    const countBadge = document.getElementById("modal-det-itens-count");
-    if (countBadge) countBadge.textContent = `${sol.itens ? sol.itens.length : 0} ${sol.itens && sol.itens.length === 1 ? 'item' : 'itens'}`;
-
-    if (tbody) {
-        if (sol.itens && sol.itens.length > 0) {
-            tbody.innerHTML = sol.itens.map((it, idx) => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/80 text-xs">
-                    <td class="p-2.5 text-center font-semibold text-slate-400 align-middle">${idx + 1}</td>
-                    <td class="p-2.5 font-semibold text-[#0f172a] align-middle">${it.codigoItem || "-"}</td>
-                    <td class="p-2.5 text-[#0f172a] font-normal align-middle">${it.descricao || "-"}</td>
-                    <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.notaFiscal || "-"}</td>
-                    <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.pedido || "-"}</td>
-                    <td class="p-2.5 text-center font-semibold text-[#0f172a] align-middle">
-                        ${it.quantidadeDevolvida || 1} un
-                    </td>
-                </tr>
-            `).join("");
-        } else {
-            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Nenhum item discriminado nesta devolução.</td></tr>`;
+        const badgeStatus = document.getElementById("modal-detalhes-status-badge");
+        if (badgeStatus) {
+            const stObj = normalizarStatus(sol.status);
+            badgeStatus.className = `badge ${stObj.badgeClass || 'bg-amber-100 text-amber-800'}`;
+            badgeStatus.innerHTML = `<i class="${stObj.icon || 'fa-solid fa-clock'} text-xs"></i> <span>${stObj.label || 'Pendente'}</span>`;
         }
+
+        // Preenche cards
+        const elNome = document.getElementById("modal-det-nome");
+        if (elNome) elNome.textContent = solicitanteNome;
+        const elEmail = document.getElementById("modal-det-email");
+        if (elEmail) elEmail.textContent = solicitanteEmail;
+        const elProt = document.getElementById("modal-det-protheus");
+        if (elProt) elProt.textContent = protheus;
+
+        const elLogTipo = document.getElementById("modal-det-log-tipo");
+        const elLogDestino = document.getElementById("modal-det-log-destino");
+        const elLogEnd = document.getElementById("modal-det-log-endereco");
+
+        if (sol.logistica?.tipo === "braspress") {
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-warehouse"></i> Braspress</span>`;
+            if (elLogDestino) elLogDestino.textContent = sol.logistica?.filialBraspress || "Filial não informada";
+            if (elLogEnd) elLogEnd.textContent = "Entrega direta na filial Braspress selecionada";
+        } else {
+            const regNome = sol.logistica?.transportadoraRegional?.nome || "Transportadora Regional";
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-slate-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> Transportadora Regional</span>`;
+            if (elLogDestino) elLogDestino.textContent = regNome;
+            if (elLogEnd) elLogEnd.textContent = `Origem: ${sol.logistica?.cidadeOrigem || "-"} / ${sol.logistica?.ufOrigem || "-"}`;
+        }
+
+        const elData = document.getElementById("modal-det-data");
+        if (elData) elData.textContent = dataFmt;
+        const elVol = document.getElementById("modal-det-volumes");
+        if (elVol) elVol.textContent = `${caixas} cx`;
+        const elTotItens = document.getElementById("modal-det-total-itens");
+        if (elTotItens) elTotItens.textContent = `${totalQtd} ${totalQtd === 1 ? 'item' : 'itens'}`;
+
+        const elObs = document.getElementById("modal-det-observacoes");
+        if (elObs) elObs.textContent = sol.observacoesGerais || "Nenhuma observação registrada.";
+
+        // Preenche tabela de itens
+        const tbody = document.getElementById("modal-det-tbody-itens");
+        const countBadge = document.getElementById("modal-det-itens-count");
+        if (countBadge) countBadge.textContent = `${sol.itens ? sol.itens.length : 0} ${sol.itens && sol.itens.length === 1 ? 'item' : 'itens'}`;
+
+        if (tbody) {
+            if (sol.itens && sol.itens.length > 0) {
+                tbody.innerHTML = sol.itens.map((it, idx) => `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/80 text-xs">
+                        <td class="p-2.5 text-center font-semibold text-slate-400 align-middle">${idx + 1}</td>
+                        <td class="p-2.5 font-semibold text-[#0f172a] align-middle">${it.codigoItem || "-"}</td>
+                        <td class="p-2.5 text-[#0f172a] font-normal align-middle">${it.descricao || "-"}</td>
+                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.notaFiscal || "-"}</td>
+                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.pedido || "-"}</td>
+                        <td class="p-2.5 text-center font-semibold text-[#0f172a] align-middle">
+                            ${it.quantidadeDevolvida || 1} un
+                        </td>
+                    </tr>
+                `).join("");
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Nenhum item discriminado nesta devolução.</td></tr>`;
+            }
+        }
+    } catch (err) {
+        console.error("Erro ao preencher dados do modal de detalhes:", err);
     }
 
     modal.classList.remove("hidden");
+    modal.style.display = "flex";
 }
 
 export function fecharModalDetalhesSolicitacao() {
     const modal = document.getElementById("modal-detalhes-solicitacao");
-    if (modal) modal.classList.add("hidden");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "none";
+    }
 }
 
 function prepararEImprimirProtocolo(sol) {
@@ -2317,8 +2364,7 @@ document.addEventListener("click", async (e) => {
         if (action === 'view') {
             abrirModalDetalhesSolicitacao(id);
         } else if (action === 'edit') {
-            const sol = (_todasSolicitacoesCache || []).find(s => s.id === id || s.protocolo === id) ||
-                        (HistoricoState.solicitacoes || []).find(s => s.id === id || s.protocolo === id);
+            const sol = _buscarSolicitacaoPorId(id);
             if (sol) {
                 showToast(`Carregando solicitação ${sol.protocolo || id} para edição...`, "info");
                 await carregarSolicitacaoParaEdicao(sol);
@@ -2334,8 +2380,7 @@ document.addEventListener("click", async (e) => {
             const novoStatusKey = actionBtn.dataset.status;
             window.appAlterarStatusSolicitacao(id, novoStatusKey);
         } else if (action === 'delete') {
-            const sol = (_todasSolicitacoesCache || []).find(s => s.id === id || s.protocolo === id) ||
-                        (HistoricoState.solicitacoes || []).find(s => s.id === id || s.protocolo === id);
+            const sol = _buscarSolicitacaoPorId(id);
             const protStr = sol?.protocolo || id;
             
             const confirmou = confirm(`Deseja realmente excluir esta solicitação de devolução (${protStr})?\nEsta ação não poderá ser desfeita.`);
