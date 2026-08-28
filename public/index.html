@@ -126,7 +126,7 @@
     <!-- 3. CABEÇALHO DO SISTEMA                                           -->
     <!-- ================================================================= -->
     <header id="app-header" class="w-full bg-[#008497] px-4 sm:px-6 py-3 shadow-md sticky top-0 z-30 hidden">
-        <div class="w-full max-w-7xl mx-auto flex justify-between items-center gap-4">
+        <div class="w-full max-w-7xl mx-auto flex justify-between items-center gap-4 flex-wrap">
             <!-- Logo & Título (Esquerda) -->
             <div class="flex items-center space-x-3 sm:space-x-4 shrink-0 whitespace-nowrap">
                 <img src="logo-makita-red.png" alt="Makita do Brasil" class="h-6 md:h-7 w-auto object-contain rounded-none">
@@ -134,9 +134,27 @@
                 <h1 class="text-xs sm:text-base md:text-lg font-bold text-white uppercase tracking-[0.5px]">SISTEMA DE DEVOLUÇÕES</h1>
             </div>
 
-            <!-- Lado Direito: Botões Renderizados Dinamicamente por Perfil via JavaScript -->
-            <div id="header-buttons" class="flex items-center space-x-2 sm:space-x-3 shrink-0 flex-wrap">
-                <!-- Renderizado via app.js -->
+            <!-- Lado Direito: Perfil do Usuário e Botões de Navegação -->
+            <div class="flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
+                <!-- Badge de Identificação do Usuário Logado -->
+                <div id="header-user-badge" class="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg text-white text-xs backdrop-blur-xs">
+                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">
+                        <i class="fa-solid fa-user text-white/90"></i>
+                    </div>
+                    <div class="leading-tight text-left">
+                        <div id="header-user-name" class="font-bold text-white truncate max-w-[130px] sm:max-w-[200px]">Colaborador</div>
+                        <div class="text-[10px] text-white/80 flex items-center gap-1.5">
+                            <span id="header-user-protheus">Protheus: -</span>
+                            <span>•</span>
+                            <span id="header-user-filial">Matriz</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação e Navegação Dinâmicos -->
+                <div id="header-buttons" class="flex items-center space-x-2 shrink-0 flex-wrap">
+                    <!-- Preenchido via app.js -->
+                </div>
             </div>
         </div>
     </header>

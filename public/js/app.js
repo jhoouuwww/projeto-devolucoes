@@ -405,6 +405,7 @@ function updateAuthUI() {
                     <i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span>
                 </button>
             `;
+            document.getElementById("btn-nav-adm-todas")?.addEventListener("click", () => setTab("adm-geral"));
             document.getElementById("btn-logout")?.addEventListener("click", fazerLogout, { once: true });
         }
         if (containerMiniRelat) containerMiniRelat.classList.add("hidden");

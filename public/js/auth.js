@@ -277,24 +277,17 @@ export async function fazerLogout() {
 }
 
 /**
- * Inicializa a sessão salva ou deixa deslogado
+ * Inicializa a sessão — inicia sempre deslogado para exibir a tela de login
  */
 export async function inicializarAuth() {
-    try {
-        const saved = sessionStorage.getItem("makita_auth_session") || localStorage.getItem("makita_auth_session");
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed && parsed.email) {
-                _simSessionActive = true;
-                await processarUsuarioLogado(parsed);
-                return;
-            }
-        }
-    } catch (e) {}
-
-    if (!_simSessionActive && !AuthState.user) {
-        notifyAuth();
-    }
+    _simSessionActive = false;
+    AuthState.user = null;
+    AuthState.profile = null;
+    AuthState.isAuthorized = false;
+    AuthState.errorMessage = null;
+    try { sessionStorage.removeItem("makita_auth_session"); } catch (e) {}
+    try { localStorage.removeItem("makita_auth_session"); } catch (e) {}
+    notifyAuth();
 }
 
 // Observador do Firebase Auth — ignora eventos null enquanto houver sessão simulada ativa
