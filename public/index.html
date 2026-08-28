@@ -526,44 +526,100 @@
                         </p>
                     </div>
 
-                    <!-- Cards de Escolha de Logística -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Opção 1: Brasspress -->
-                        <div class="logistica-card selected p-5 rounded-xl flex items-start gap-4" data-tipo="braspress">
-                            <div class="p-3 bg-[#008497]/10 text-[#008497] rounded-xl text-xl">
-                                <i class="fa-solid fa-warehouse"></i>
-                            </div>
-                            <div class="flex-1">
-                                <strong class="text-sm font-bold text-slate-800 block">Retirada em Filial Brasspress</strong>
-                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Colaborador irá se deslocar até a unidade selecionada para entrega direta na unidade / filial Brasspress mais próxima da sua região.
+                    <!-- Cards de Escolha de Logística (4 Modalidades) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        <!-- Opção 1: Brasspress Filial -->
+                        <div class="logistica-card selected p-4 rounded-xl flex flex-col justify-between cursor-pointer transition-all border border-slate-200" data-tipo="braspress">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="p-2.5 bg-[#008497]/10 text-[#008497] rounded-lg text-lg">
+                                        <i class="fa-solid fa-warehouse"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-[#008497] bg-[#008497]/10 px-2 py-0.5 rounded-full border border-[#008497]/20">
+                                        Recomendado
+                                    </span>
+                                </div>
+                                <strong class="text-xs font-bold text-slate-800 block">Retirada em Filial Brasspress</strong>
+                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    Entrega direta pelo colaborador na unidade/filial Braspress mais próxima.
                                 </p>
-                                <span class="inline-flex items-center gap-1.5 mt-3 text-[11px] font-bold text-[#008497] bg-[#008497]/10 px-2.5 py-1 rounded-lg border border-[#008497]/20">
-                                    <i class="fa-solid fa-check text-[#008497]"></i> Recomendado!
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-[#008497]">
+                                <span>106 Filiais</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </div>
+                        </div>
+
+                        <!-- Opção 2: Brasspress Retira no Endereço (NOVO) -->
+                        <div class="logistica-card p-4 rounded-xl flex flex-col justify-between cursor-pointer transition-all border border-slate-200" data-tipo="braspress_retira">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="p-2.5 bg-amber-500/10 text-amber-600 rounded-lg text-lg">
+                                        <i class="fa-solid fa-truck-pickup"></i>
+                                    </div>
+                                    <span class="text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                        Coleta
+                                    </span>
+                                </div>
+                                <strong class="text-xs font-bold text-slate-800 block">Brasspress Retira no Endereço</strong>
+                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    Utilize esta opção caso você prefira que a filial da brasspress faça a retirada dos equipamentos de devolução diretamente no endereço indicado:
+                                </p>
+                            </div>
+                            <div class="mt-2.5">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50/80 px-2 py-1 rounded border border-amber-200/80 leading-tight">
+                                    <i class="fa-solid fa-clock-rotate-left text-amber-600 text-[10px] shrink-0"></i> Processo mais longo e demorado por parte da Brasspress
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Opção 2: Transportadora Regional -->
-                        <div class="logistica-card p-5 rounded-xl flex items-start gap-4" data-tipo="transportadora_regional">
-                            <div class="p-3 bg-slate-100 text-slate-600 rounded-xl text-xl">
-                                <i class="fa-solid fa-truck-ramp-box"></i>
-                            </div>
-                            <div class="flex-1">
-                                <strong class="text-sm font-bold text-slate-800 block">Transportadora Regional Indicada</strong>
-                                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                                    Utilize esta opção caso a distância até a filial Braspress seja excessiva e exija o deslocamento do caminhão até o seu endereço!.
+                        <!-- Opção 3: Retirada em Filial Makita (NOVO) -->
+                        <div class="logistica-card p-4 rounded-xl flex flex-col justify-between cursor-pointer transition-all border border-slate-200" data-tipo="filial_makita">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="p-2.5 bg-[#008497]/10 text-[#008497] rounded-lg text-lg">
+                                        <i class="fa-solid fa-building-flag"></i>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-[#008497] bg-[#008497]/10 px-2 py-0.5 rounded-full border border-[#008497]/20">
+                                        Makita Oficial
+                                    </span>
+                                </div>
+                                <strong class="text-xs font-bold text-slate-800 block">Retirada em Filial Makita</strong>
+                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    Entrega ou despacho direto em uma das unidades, centros de distribuição ou fábricas oficiais da Makita do Brasil.
                                 </p>
-                                <span class="inline-flex items-center gap-1.5 mt-3 text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                                    <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> Processo mais longo e demorado por parte da Brasspress
-                                </span>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-[#008497]">
+                                <span>10 Unidades</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </div>
+                        </div>
+
+                        <!-- Opção 4: Transportadora Regional Indicada (Reformulado) -->
+                        <div class="logistica-card p-4 rounded-xl flex flex-col justify-between cursor-pointer transition-all border border-slate-200" data-tipo="transportadora_regional">
+                            <div>
+                                <div class="flex items-center justify-between mb-2.5">
+                                    <div class="p-2.5 bg-slate-100 text-slate-600 rounded-lg text-lg">
+                                        <i class="fa-solid fa-truck-ramp-box"></i>
+                                    </div>
+                                    <span class="text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                        Outra Cia
+                                    </span>
+                                </div>
+                                <strong class="text-xs font-bold text-slate-800 block">Transportadora Regional Indicada</strong>
+                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    Utilize esta opção apenas quando uma transportadora Brasspress for muito distante do seu CEP e você preferir indicar outra transportadora.
+                                </p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-700">
+                                <span>Busca por CNPJ</span>
+                                <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Campos Específicos: Braspress -->
+                    <!-- 1. Campos: Braspress Filial -->
                     <div id="container-braspress-fields" class="space-y-4 pt-1">
-                        <!-- Busca por CEP para encontrar Filial mais próxima -->
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
                                 <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
@@ -604,7 +660,6 @@
                             
                             <!-- Componente Customizado de Dropdown com Busca (Design System) -->
                             <div class="custom-select-container" id="custom-select-filial-container">
-                                <!-- Gatilho (Trigger Input) -->
                                 <div class="custom-select-trigger" id="trigger-filial-braspress" tabindex="0" role="combobox" aria-expanded="false">
                                     <div class="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
                                         <div class="w-7 h-7 rounded-lg bg-[#008497]/10 flex items-center justify-center text-[#008497] shrink-0">
@@ -618,12 +673,9 @@
                                     <i class="fa-solid fa-chevron-down custom-select-arrow" id="icon-arrow-filial-braspress"></i>
                                 </div>
 
-                                <!-- Input oculto para manter compatibilidade com forms e validações -->
                                 <input type="hidden" id="select-filial-braspress" name="filialBraspress" value="">
 
-                                <!-- Menu Suspenso Flutuante -->
                                 <div class="custom-select-menu hidden" id="menu-filial-braspress">
-                                    <!-- Cabeçalho do Menu com Título da Categoria em Caixa Alta e Fundo Primário -->
                                     <div class="custom-select-header">
                                         <span class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                                             <i class="fa-solid fa-building text-xs text-white/90"></i>
@@ -632,7 +684,6 @@
                                         <span class="text-[10px] text-white/90 bg-white/15 px-2 py-0.5 rounded font-mono" id="count-filiais-braspress">106 unidades</span>
                                     </div>
 
-                                    <!-- Barra de Busca Integrada (Search Box) -->
                                     <div class="p-2.5 bg-slate-50 border-b border-slate-200">
                                         <div class="relative">
                                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
@@ -644,7 +695,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Lista de Opções Ricas (2 linhas) com Scroll Customizado -->
                                     <div class="custom-select-options divide-y divide-slate-100" id="options-filial-braspress">
                                         <!-- Renderizado dinamicamente via app.js -->
                                     </div>
@@ -656,16 +706,171 @@
                         </div>
                     </div>
 
-                    <!-- Campos Específicos: Transportadora Regional -->
-                    <div id="container-regional-fields" class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 hidden">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 2. Campos: Brasspress Retira no Endereço (NOVO) -->
+                    <div id="container-braspress-retira-fields" class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 hidden">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-truck-pickup text-[#008497]"></i> Endereço para Coleta pela Brasspress
+                            </h3>
+                            <span class="text-[10px] text-amber-700 font-semibold bg-amber-100/60 px-2 py-0.5 rounded border border-amber-200">
+                                Coleta Agendada
+                            </span>
+                        </div>
+
+                        <!-- Busca de CEP Automática -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">
+                                CEP de Coleta <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <input type="text" 
+                                           id="input-retira-cep" 
+                                           maxlength="9" 
+                                           placeholder="Ex: 01310-100" 
+                                           class="w-full p-2.5 pl-9 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-[#008497] font-medium font-mono">
+                                    <i class="fa-solid fa-map-pin absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                </div>
+                                <button type="button" 
+                                        id="btn-buscar-retira-cep" 
+                                        class="px-4 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Buscar CEP
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Endereço Completo -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Rua / Logradouro <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-retira-rua" placeholder="Preenchido automaticamente pelo CEP" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Razão Social da Transportadora <span class="text-rose-500">*</span></label>
-                                <input type="text" id="input-reg-nome" placeholder="Ex: TransNordeste Express" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Número <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-retira-numero" placeholder="Ex: 1500" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-[#008497]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Complemento</label>
+                                <input type="text" id="input-retira-complemento" placeholder="Ex: Galpão B, Sala 12" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Bairro <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-retira-bairro" placeholder="Bairro" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">Cidade <span class="text-rose-500">*</span></label>
+                                        <input type="text" id="input-retira-cidade" placeholder="Cidade" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">UF <span class="text-rose-500">*</span></label>
+                                        <input type="text" id="input-retira-uf" placeholder="SP" maxlength="2" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs uppercase font-mono text-center">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Ponto de Referência / Responsável no Local</label>
+                                <input type="text" id="input-retira-referencia" placeholder="Ex: Ao lado do posto Shell / Procurar por Sr. Marcos" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Telefone / WhatsApp de Contato</label>
-                                <input type="text" id="input-reg-tel" placeholder="Ex: (85) 99876-5432" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                                <input type="text" id="input-retira-telefone" placeholder="Ex: (11) 98765-4321" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Campos: Retirada em Filial Makita (NOVO) -->
+                    <div id="container-filial-makita-fields" class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 hidden">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-building-flag text-[#008497]"></i> Selecione a Unidade / Filial Oficial da Makita do Brasil
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Clique na unidade desejada para vinculação automática de endereço e CNPJ.</p>
+                            </div>
+                            <span class="text-[10px] text-[#008497] font-bold bg-[#008497]/10 px-2.5 py-1 rounded-lg border border-[#008497]/20">
+                                10 Unidades Oficiais
+                            </span>
+                        </div>
+
+                        <!-- Grid Dinâmico de Cards de Filiais Makita -->
+                        <div id="grid-filiais-makita-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <!-- Preenchido dinamicamente via app.js -->
+                        </div>
+
+                        <!-- Card de Resumo da Filial Makita Selecionada -->
+                        <div id="card-filial-makita-selecionada" class="p-4 bg-white border-2 border-[#008497] rounded-xl text-xs space-y-2 shadow-xs">
+                            <div class="flex items-center justify-between text-[#008497] font-bold border-b border-slate-100 pb-2">
+                                <span class="flex items-center gap-2 text-sm">
+                                    <i class="fa-solid fa-circle-check text-[#008497]"></i>
+                                    <span id="makita-sel-nome">São Bernardo do Campo (SP)</span>
+                                </span>
+                                <span id="makita-sel-unidade" class="bg-[#008497]/10 text-[#008497] px-2 py-0.5 rounded text-[10px] font-bold uppercase">Centro de Distribuição & Comercial</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600">
+                                <div><strong class="text-slate-700">Razão Social:</strong> Makita do Brasil Ferramentas Elétricas Ltda</div>
+                                <div><strong class="text-slate-700">CNPJ:</strong> <span id="makita-sel-cnpj" class="font-mono text-slate-800 font-semibold">45.865.920/0001-00</span></div>
+                                <div class="sm:col-span-2"><strong class="text-slate-700">Endereço:</strong> <span id="makita-sel-endereco">Rua Makita Brasil, 200 - Bairro Cooperativa - São Bernardo do Campo/SP - CEP: 09852-080</span></div>
+                                <div><strong class="text-slate-700">Telefone:</strong> <span id="makita-sel-telefone">(11) 2199-2500</span></div>
+                                <div><strong class="text-slate-700">E-mail:</strong> sac@makita.com.br</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Campos: Transportadora Regional (Busca por CNPJ) -->
+                    <div id="container-regional-fields" class="p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4 hidden">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> Transportadora Regional Indicada
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Informe o CNPJ para preenchimento automático dos dados cadastrais da transportadora.</p>
+                            </div>
+                            <span class="text-[10px] text-slate-600 font-semibold bg-white px-2 py-0.5 rounded border border-slate-200">
+                                Busca por CNPJ
+                            </span>
+                        </div>
+
+                        <!-- Busca de CNPJ Automática -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">
+                                CNPJ da Transportadora <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <input type="text" 
+                                           id="input-reg-cnpj" 
+                                           maxlength="18" 
+                                           placeholder="Digite o CNPJ (Ex: 12.345.678/0001-90)" 
+                                           class="w-full p-2.5 pl-9 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-1 focus:ring-[#008497] font-medium font-mono">
+                                    <i class="fa-solid fa-id-card absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                </div>
+                                <button type="button" 
+                                        id="btn-buscar-reg-cnpj" 
+                                        class="px-4 py-2.5 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Buscar CNPJ
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Dados Retornados da Transportadora -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Razão Social da Transportadora <span class="text-rose-500">*</span></label>
+                                <input type="text" id="input-reg-nome" placeholder="Razão social retornada pelo CNPJ" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-[#008497]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nome Fantasia</label>
+                                <input type="text" id="input-reg-fantasia" placeholder="Nome Fantasia" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Telefone / WhatsApp de Contato</label>
+                                <input type="text" id="input-reg-tel" placeholder="Ex: (85) 3456-7890" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Endereço da Base / Galpão</label>
+                                <input type="text" id="input-reg-endereco" placeholder="Logradouro, número, complemento, bairro" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Cidade da Base da Transportadora <span class="text-rose-500">*</span></label>
@@ -675,13 +880,13 @@
                                 <label class="block text-xs font-bold text-slate-700 mb-1">UF <span class="text-rose-500">*</span></label>
                                 <input type="text" id="input-reg-uf" placeholder="Ex: CE" maxlength="2" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs uppercase font-mono">
                             </div>
-                            <div class="md:col-span-2">
+                            <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Nome da Pessoa de Contato / Balcão</label>
                                 <input type="text" id="input-reg-contato" placeholder="Ex: Sr. Carlos (Gerente Operacional)" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo da Escolha Regional (Distância da Base)</label>
-                                <input type="text" id="input-reg-motivo" placeholder="Ex: Base Brasspress mais próxima fica a 350 km." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo da Escolha Regional</label>
+                                <input type="text" id="input-reg-motivo" placeholder="Ex: Base Braspress mais próxima fica a 350 km." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs">
                             </div>
                         </div>
                     </div>
@@ -1389,6 +1594,69 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- ================================================================= -->
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE SOLICITAÇÃO (MAKITA DESIGN)   -->
+    <!-- ================================================================= -->
+    <div id="modal-confirmar-exclusao" class="hidden fixed inset-0 z-[750] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <!-- Header Modal Vermelho/Rose -->
+            <div class="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-white text-base shrink-0">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white tracking-tight">Excluir Solicitação</h2>
+                        <p class="text-[11px] text-white/80 font-normal">Confirmação de exclusão definitiva</p>
+                    </div>
+                </div>
+                <button type="button" onclick="window.fecharModalConfirmarExclusao()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" title="Fechar">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Corpo -->
+            <div class="p-6 space-y-4">
+                <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 text-lg shrink-0 mt-0.5"></i>
+                    <div class="text-xs text-rose-900 leading-relaxed">
+                        <strong>Atenção:</strong> Esta ação é irreversível. O registro da solicitação será removido e os ativos retornarão para o saldo disponível do promotor.
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <span class="text-slate-500">Protocolo:</span>
+                        <span id="modal-exc-protocolo" class="font-bold text-[#008497] bg-white px-2.5 py-0.5 rounded border border-slate-200 font-mono text-xs">#00000</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Solicitante:</span>
+                        <span id="modal-exc-solicitante" class="font-semibold text-slate-800">-</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Total de Itens:</span>
+                        <span id="modal-exc-itens" class="font-medium text-slate-700">-</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Data de Registro:</span>
+                        <span id="modal-exc-data" class="text-slate-600 font-normal">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rodapé com Botões -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end items-center gap-2.5">
+                <button type="button" onclick="window.fecharModalConfirmarExclusao()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-executar-exclusao-modal" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Sim, Excluir Solicitação</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
     <!-- 5. SEÇÃO DE IMPRESSÃO DE COMPROVANTE (EXCLUSIVA PARA PRINT)       -->
     <!-- ================================================================= -->
     <div id="print-protocol-section" class="hidden">
@@ -1398,6 +1666,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_151600"></script>
+    <script type="module" src="./js/app.js?v=20260828_192000"></script>
 </body>
 </html>

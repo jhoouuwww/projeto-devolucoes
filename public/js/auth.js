@@ -87,7 +87,7 @@ export async function buscarVinculoProtheus(inputStr) {
         };
     }
 
-    // 3. Se não encontrou na base local, busca no Firestore (Coleções 'usuarios_protheus' e 'usuarios_app')
+    // 3. Se não encontrou na base local, busca no Firestore (Coleções 'usuarios_protheus', 'usuarios_app', 'vinculos_usuarios', 'promotores')
     try {
         const firestorePromise = (async () => {
             // 3a. Busca direta por ID em usuarios_protheus
@@ -113,9 +113,9 @@ export async function buscarVinculoProtheus(inputStr) {
                 const userEmail = data.email || `${term}@makita.com.br`;
                 return {
                     protheus: String(data.codigoProtheus || term).trim(),
-                    nome: userEmail.split("@")[0].replace(/[._-]/g, " "),
-                    filial: "01 - Matriz",
-                    cargo: "Promotor Técnico",
+                    nome: data.nome || userEmail.split("@")[0].replace(/[._-]/g, " "),
+                    filial: data.filial || "01 - Matriz",
+                    cargo: data.cargo || "Promotor Técnico",
                     isAdmin: ADMIN_EMAILS.includes(userEmail),
                     email: userEmail
                 };
@@ -128,14 +128,15 @@ export async function buscarVinculoProtheus(inputStr) {
                 const data = qAppSnap.docs[0].data();
                 return {
                     protheus: String(data.codigoProtheus || qAppSnap.docs[0].id).trim(),
-                    nome: term.split("@")[0].replace(/[._-]/g, " "),
-                    filial: "01 - Matriz",
-                    cargo: "Promotor Técnico",
+                    nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
+                    filial: data.filial || "01 - Matriz",
+                    cargo: data.cargo || "Promotor Técnico",
                     isAdmin: ADMIN_EMAILS.includes(term),
                     email: term
                 };
             }
 
+            // 3d. Query em usuarios_protheus por email
             const q1 = query(collection(db, "usuarios_protheus"), where("email", "==", term));
             const qSnap1 = await getDocs(q1);
             if (!qSnap1.empty) {
@@ -150,23 +151,44 @@ export async function buscarVinculoProtheus(inputStr) {
                 };
             }
 
-            const q2 = query(collection(db, "usuarios_protheus"), where("protheus", "==", term));
-            const qSnap2 = await getDocs(q2);
-            if (!qSnap2.empty) {
-                const data = qSnap2.docs[0].data();
-                return {
-                    protheus: String(data.protheus || data.codigoProtheus || data.codProtheus || "").trim(),
-                    nome: data.nome || data.nomeCompleto || term.split("@")[0].replace(/[._-]/g, " "),
-                    filial: data.filial || "01 - Matriz",
-                    cargo: data.cargo || "Promotor Técnico",
-                    isAdmin: ADMIN_EMAILS.includes(term) || !!data.isAdmin,
-                    email: data.email || term
-                };
-            }
+            // 3e. Query em vinculos_usuarios
+            try {
+                const qVinc = query(collection(db, "vinculos_usuarios"), where("email", "==", term));
+                const qVincSnap = await getDocs(qVinc);
+                if (!qVincSnap.empty) {
+                    const data = qVincSnap.docs[0].data();
+                    return {
+                        protheus: String(data.protheus || data.codigoProtheus || "").trim(),
+                        nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
+                        filial: data.filial || "01 - Matriz",
+                        cargo: data.cargo || "Promotor Técnico",
+                        isAdmin: ADMIN_EMAILS.includes(term),
+                        email: term
+                    };
+                }
+            } catch (e) {}
+
+            // 3f. Query em promotores
+            try {
+                const qProm = query(collection(db, "promotores"), where("email", "==", term));
+                const qPromSnap = await getDocs(qProm);
+                if (!qPromSnap.empty) {
+                    const data = qPromSnap.docs[0].data();
+                    return {
+                        protheus: String(data.protheus || data.codigoProtheus || "").trim(),
+                        nome: data.nome || term.split("@")[0].replace(/[._-]/g, " "),
+                        filial: data.filial || "01 - Matriz",
+                        cargo: data.cargo || "Promotor Técnico",
+                        isAdmin: ADMIN_EMAILS.includes(term),
+                        email: term
+                    };
+                }
+            } catch (e) {}
+
             return null;
         })();
 
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 4000));
         const resultadoFirestore = await Promise.race([firestorePromise, timeoutPromise]);
         if (resultadoFirestore && resultadoFirestore.protheus) {
             return resultadoFirestore;
@@ -175,17 +197,8 @@ export async function buscarVinculoProtheus(inputStr) {
         console.warn("Aviso ao consultar Firestore para vínculo Protheus:", err.message);
     }
 
-    // 4. Fallback Dinâmico para qualquer colaborador Makita
-    const fallbackEmail = term.includes("@") ? term : `${cleanUser}@makita.com.br`;
-    const username = cleanUser.replace(/[._-]/g, " ");
-    return {
-        protheus: "99999",
-        nome: username,
-        filial: "01 - Matriz",
-        cargo: "Promotor Técnico",
-        isAdmin: ADMIN_EMAILS.includes(fallbackEmail) || fallbackEmail.includes("j_melgaco"),
-        email: fallbackEmail
-    };
+    // Se não encontrou em NENHUMA base de promotores/admins autorizados, retorna null
+    return null;
 }
 
 /**
@@ -204,36 +217,62 @@ async function processarUsuarioLogado(firebaseUser) {
     let email = firebaseUser.email ? firebaseUser.email.toLowerCase().trim() : "";
     if (email && !email.includes("@")) {
         email = `${email}@makita.com.br`;
-    } else if (email && email.endsWith("@makita")) {
-        email = `${email}.com.br`;
     }
 
-    // Regra 1: Validação de Domínio Corporativo ou Admins autorizados
-    const cleanUser = email.split("@")[0].trim();
+    // Regra 1: Validação Estrita de Domínio Corporativo (@makita.com.br)
     const isDomainMakita = email.endsWith("@makita.com.br") || 
-                           email.endsWith("@makitabr.onmicrosoft.com") || 
-                           email.includes("makita") || 
-                           VINCULOS_INICIAIS[email] !== undefined ||
-                           ADMIN_EMAILS.includes(email) ||
-                           ADMIN_EMAILS.includes(cleanUser);
+                           email.endsWith("@makitabr.onmicrosoft.com") ||
+                           email === "j_melgaco@makita.com.br";
 
     if (!isDomainMakita) {
-        AuthState.user = firebaseUser;
+        try { await signOut(auth); } catch (e) {}
+        try { sessionStorage.removeItem("makita_auth_session"); } catch (e) {}
+        try { localStorage.removeItem("makita_auth_session"); } catch (e) {}
+
+        AuthState.user = null;
         AuthState.profile = null;
         AuthState.isAuthorized = false;
-        AuthState.errorMessage = `O e-mail "${email}" não pertence ao domínio corporativo (@makita.com.br). O acesso a este portal é restrito a colaboradores da empresa.`;
+        AuthState.errorMessage = `Acesso negado: O e-mail "${email || 'informado'}" não pertence ao domínio corporativo (@makita.com.br). O acesso é exclusivo para colaboradores da Makita Brasil.`;
         notifyAuth();
         return;
     }
 
-    // Regra 2: Busca de vínculo com Código Protheus no Firestore ou local
-    const vinculo = await buscarVinculoProtheus(email);
+    // Regra 2: Consulta e Validação de Cadastro no Firestore / Base Autorizada
+    const cleanUser = email.split("@")[0].trim();
+    const isMasterAdmin = email === "j_melgaco@makita.com.br" || cleanUser === "j_melgaco" || cleanUser === "88901";
 
-    const protheusCode = vinculo?.protheus || "99999";
-    const nomeOficial = (vinculo && vinculo.nome) ? vinculo.nome : (firebaseUser.displayName || cleanUser.replace(/[._-]/g, " "));
-    const filialOficial = vinculo?.filial || "01 - Matriz";
-    const cargoOficial = vinculo?.cargo || "Promotor Técnico";
-    const isAdminUser = email === "j_melgaco@makita.com.br" || cleanUser === "j_melgaco" || cleanUser === "88901";
+    let vinculo = null;
+    if (isMasterAdmin) {
+        vinculo = {
+            protheus: "88901",
+            nome: "Jonathan Melgaço",
+            filial: "01 - Matriz",
+            cargo: "Administrador / Suporte",
+            isAdmin: true,
+            email: "j_melgaco@makita.com.br"
+        };
+    } else {
+        vinculo = await buscarVinculoProtheus(email);
+    }
+
+    if (!vinculo || !vinculo.protheus) {
+        try { await signOut(auth); } catch (e) {}
+        try { sessionStorage.removeItem("makita_auth_session"); } catch (e) {}
+        try { localStorage.removeItem("makita_auth_session"); } catch (e) {}
+
+        AuthState.user = null;
+        AuthState.profile = null;
+        AuthState.isAuthorized = false;
+        AuthState.errorMessage = `Acesso não autorizado: O e-mail "${email}" é corporativo, porém ainda não está cadastrado na base de promotores autorizados da Makita. Entre em contato com o suporte/administrador (j_melgaco@makita.com.br) para solicitar seu cadastro.`;
+        notifyAuth();
+        return;
+    }
+
+    const protheusCode = vinculo.protheus;
+    const nomeOficial = vinculo.nome || firebaseUser.displayName || cleanUser.replace(/[._-]/g, " ");
+    const filialOficial = vinculo.filial || "01 - Matriz";
+    const cargoOficial = vinculo.cargo || "Promotor Técnico";
+    const isAdminUser = isMasterAdmin || vinculo.isAdmin === true;
 
     AuthState.user = firebaseUser;
     AuthState.profile = {

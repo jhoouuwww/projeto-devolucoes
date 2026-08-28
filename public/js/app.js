@@ -48,6 +48,7 @@ import {
 } from "./api.js";
 
 import { BRASPRESS_FILIAIS, buscarFilialBraspressPorCEP } from "./braspress.js";
+import { FILIAIS_MAKITA } from "./filiais_makita.js";
 
 // Helper de Toast Padronizado Makita
 export function showToast(mensagem, tipo = "info") {
@@ -415,7 +416,7 @@ function updateAuthUI() {
 
         setTab("adm-geral");
     } else {
-        // TELA PADRÃO PROMOTORES: Nova Solicitação, Minhas Devoluções, Cadastrar Promotor e Sair
+        // TELA PADRÃO PROMOTORES: Nova Solicitação, Minhas Devoluções e Sair (Sem botão de cadastro)
         if (headerButtons) {
             headerButtons.innerHTML = `
                 <button id="btn-nav-nova" class="nav-tab-btn flex items-center space-x-2 bg-white/30 border border-white text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="devolucao">
@@ -424,16 +425,12 @@ function updateAuthUI() {
                 <button id="btn-nav-historico" class="nav-tab-btn flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white/90 hover:text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" data-tab="historico">
                     <i class="fa-solid fa-clock-rotate-left text-xs"></i> <span>Minhas Devoluções</span>
                 </button>
-                <button id="btn-header-cadastrar-promotor" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Cadastrar novo promotor e sincronizar NFs">
-                    <i class="fa-solid fa-user-plus text-xs"></i> <span>Cadastrar Promotor</span>
-                </button>
                 <button id="btn-logout" class="flex items-center space-x-2 bg-white/15 hover:bg-white/25 border border-white/40 text-white backdrop-blur-md px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition shadow-[0_2px_6px_rgba(0,0,0,0.08)] cursor-pointer" title="Sair do sistema">
                     <i class="fa-solid fa-right-from-bracket text-xs"></i> <span>Sair</span>
                 </button>
             `;
             document.getElementById("btn-nav-nova")?.addEventListener("click", () => setTab("devolucao"));
             document.getElementById("btn-nav-historico")?.addEventListener("click", () => setTab("historico"));
-            document.getElementById("btn-header-cadastrar-promotor")?.addEventListener("click", abrirModalCadastrarPromotor);
             document.getElementById("btn-logout")?.addEventListener("click", fazerLogout, { once: true });
         }
         if (containerMiniRelat) containerMiniRelat.classList.remove("hidden");
@@ -982,10 +979,10 @@ export function initCustomSelectFiliais() {
 }
 
 /**
- * ETAPA 3: Renderização de Logística
+ * ETAPA 3: Renderização de Logística (4 Modalidades)
  */
 function renderEtapa3Logistica() {
-    const tipo = DevolucaoState.logistica.tipo;
+    const tipo = DevolucaoState.logistica.tipo || "braspress";
 
     // Alterna visual dos cards de seleção
     document.querySelectorAll(".logistica-card").forEach(card => {
@@ -993,21 +990,129 @@ function renderEtapa3Logistica() {
         card.classList.toggle("selected", cardTipo === tipo);
     });
 
-    document.getElementById("container-braspress-fields").classList.toggle("hidden", tipo !== "braspress");
-    document.getElementById("container-regional-fields").classList.toggle("hidden", tipo !== "transportadora_regional");
+    const cBras = document.getElementById("container-braspress-fields");
+    const cRetira = document.getElementById("container-braspress-retira-fields");
+    const cMakita = document.getElementById("container-filial-makita-fields");
+    const cReg = document.getElementById("container-regional-fields");
 
-    // Inicializa e atualiza componente customizado de seleção de Filial Braspress
-    initCustomSelectFiliais();
-    selecionarFilialBraspress(DevolucaoState.logistica.filialBraspress || "São Paulo - Matriz/Vila Maria (SP)");
+    if (cBras) cBras.classList.toggle("hidden", tipo !== "braspress");
+    if (cRetira) cRetira.classList.toggle("hidden", tipo !== "braspress_retira");
+    if (cMakita) cMakita.classList.toggle("hidden", tipo !== "filial_makita");
+    if (cReg) cReg.classList.toggle("hidden", tipo !== "transportadora_regional");
 
-    // Sincroniza campos regionais
-    const reg = DevolucaoState.logistica.transportadoraRegional;
-    document.getElementById("input-reg-nome").value = reg.nome || "";
-    document.getElementById("input-reg-tel").value = reg.telefone || "";
-    document.getElementById("input-reg-cidade").value = reg.cidade || "";
-    document.getElementById("input-reg-uf").value = reg.uf || "";
-    document.getElementById("input-reg-contato").value = reg.contato || "";
-    document.getElementById("input-reg-motivo").value = DevolucaoState.logistica.motivoEscolhaRegional || "";
+    if (tipo === "braspress") {
+        initCustomSelectFiliais();
+        selecionarFilialBraspress(DevolucaoState.logistica.filialBraspress || "São Paulo - Matriz/Vila Maria (SP)");
+    } else if (tipo === "braspress_retira") {
+        const ret = DevolucaoState.logistica.braspressRetira;
+        const elCep = document.getElementById("input-retira-cep");
+        const elRua = document.getElementById("input-retira-rua");
+        const elNum = document.getElementById("input-retira-numero");
+        const elComp = document.getElementById("input-retira-complemento");
+        const elBairro = document.getElementById("input-retira-bairro");
+        const elCidade = document.getElementById("input-retira-cidade");
+        const elUf = document.getElementById("input-retira-uf");
+        const elRef = document.getElementById("input-retira-referencia");
+        const elTel = document.getElementById("input-retira-telefone");
+
+        if (elCep) elCep.value = ret?.cep || "";
+        if (elRua) elRua.value = ret?.logradouro || "";
+        if (elNum) elNum.value = ret?.numero || "";
+        if (elComp) elComp.value = ret?.complemento || "";
+        if (elBairro) elBairro.value = ret?.bairro || "";
+        if (elCidade) elCidade.value = ret?.cidade || "";
+        if (elUf) elUf.value = ret?.uf || "";
+        if (elRef) elRef.value = ret?.referencia || "";
+        if (elTel) elTel.value = ret?.telefone || "";
+    } else if (tipo === "filial_makita") {
+        renderFiliaisMakitaCards();
+    } else if (tipo === "transportadora_regional") {
+        const reg = DevolucaoState.logistica.transportadoraRegional;
+        const elCnpj = document.getElementById("input-reg-cnpj");
+        const elNome = document.getElementById("input-reg-nome");
+        const elFantasia = document.getElementById("input-reg-fantasia");
+        const elTel = document.getElementById("input-reg-tel");
+        const elEnd = document.getElementById("input-reg-endereco");
+        const elCidade = document.getElementById("input-reg-cidade");
+        const elUf = document.getElementById("input-reg-uf");
+        const elContato = document.getElementById("input-reg-contato");
+        const elMotivo = document.getElementById("input-reg-motivo");
+
+        if (elCnpj) elCnpj.value = reg?.cnpj || "";
+        if (elNome) elNome.value = reg?.nome || "";
+        if (elFantasia) elFantasia.value = reg?.nomeFantasia || "";
+        if (elTel) elTel.value = reg?.telefone || "";
+        if (elEnd) elEnd.value = reg?.logradouro || "";
+        if (elCidade) elCidade.value = reg?.cidade || "";
+        if (elUf) elUf.value = reg?.uf || "";
+        if (elContato) elContato.value = reg?.contato || "";
+        if (elMotivo) elMotivo.value = reg?.motivo || DevolucaoState.logistica.motivoEscolhaRegional || "";
+    }
+}
+
+/**
+ * Renderiza os cards das Unidades e Filiais Oficiais da Makita do Brasil
+ */
+function renderFiliaisMakitaCards() {
+    const grid = document.getElementById("grid-filiais-makita-cards");
+    if (!grid) return;
+
+    const currentSelectedId = DevolucaoState.logistica?.filialMakita?.id || "sbc_cd";
+
+    grid.innerHTML = FILIAIS_MAKITA.map(f => {
+        const isSelected = f.id === currentSelectedId;
+        return `
+            <div class="filial-makita-card p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected ? 'border-[#008497] bg-[#008497]/5 ring-2 ring-[#008497]' : 'border-slate-200 bg-white hover:border-[#008497]/60 hover:bg-slate-50'}" data-id="${f.id}">
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg ${isSelected ? 'bg-[#008497] text-white' : 'bg-slate-100 text-[#008497]'} flex items-center justify-center text-xs shrink-0">
+                                <i class="${f.icone}"></i>
+                            </div>
+                            <span class="font-bold text-xs ${isSelected ? 'text-[#008497]' : 'text-slate-800'}">${f.nome}</span>
+                        </div>
+                        ${isSelected ? '<i class="fa-solid fa-circle-check text-[#008497] text-sm"></i>' : '<div class="w-4 h-4 rounded-full border border-slate-300"></div>'}
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-semibold block">${f.unidade}</span>
+                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2">${f.logradouro} - ${f.bairro} (${f.cidade}/${f.uf})</p>
+                </div>
+                <div class="mt-2 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[10px] text-slate-500">
+                    <span class="font-mono">${f.telefone}</span>
+                    <span class="font-bold text-[#008497]">${f.destaque}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    grid.querySelectorAll(".filial-makita-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const fid = card.dataset.id;
+            const branch = FILIAIS_MAKITA.find(b => b.id === fid);
+            if (branch) {
+                DevolucaoState.logistica.filialMakita = branch;
+                renderFiliaisMakitaCards();
+                atualizarCardResumoFilialMakita(branch);
+            }
+        });
+    });
+
+    const initialBranch = FILIAIS_MAKITA.find(b => b.id === currentSelectedId) || FILIAIS_MAKITA[0];
+    atualizarCardResumoFilialMakita(initialBranch);
+}
+
+function atualizarCardResumoFilialMakita(branch) {
+    if (!branch) return;
+    const elNome = document.getElementById("makita-sel-nome");
+    const elUnidade = document.getElementById("makita-sel-unidade");
+    const elCnpj = document.getElementById("makita-sel-cnpj");
+    const elEndereco = document.getElementById("makita-sel-endereco");
+    const elTelefone = document.getElementById("makita-sel-telefone");
+
+    if (elNome) elNome.textContent = branch.nome;
+    if (elUnidade) elUnidade.textContent = branch.unidade;
+    if (elCnpj) elCnpj.textContent = branch.cnpj;
+    if (elEndereco) elEndereco.textContent = `${branch.logradouro} - ${branch.bairro} - ${branch.cidade}/${branch.uf} - CEP: ${branch.cep}`;
+    if (elTelefone) elTelefone.textContent = branch.telefone;
 }
 
 /**
@@ -1052,15 +1157,27 @@ function renderEtapa4Resumo() {
     if (elPeso) elPeso.textContent = DevolucaoState.volumes.pesoAproximadoKg ? `${DevolucaoState.volumes.pesoAproximadoKg} kg aprox.` : "Não informado";
     document.getElementById("resumo-volumes-obs").textContent = DevolucaoState.volumes.observacoesEmbalagem || "Nenhuma observação de embalagem.";
 
-    // Logística
-    if (DevolucaoState.logistica.tipo === "braspress") {
+    // Logística Resumo para as 4 modalidades
+    const tipo = DevolucaoState.logistica.tipo || "braspress";
+    const elLogTipo = document.getElementById("resumo-logistica-tipo");
+    const elLogDetalhe = document.getElementById("resumo-logistica-detalhe");
+
+    if (tipo === "braspress") {
         const filial = DevolucaoState.logistica.filialBraspress === "outra" ? DevolucaoState.logistica.filialOutraTexto : DevolucaoState.logistica.filialBraspress;
-        document.getElementById("resumo-logistica-tipo").textContent = "Retirada em Filial Brasspress";
-        document.getElementById("resumo-logistica-detalhe").textContent = filial || "Filial não especificada";
-    } else {
+        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5"><i class="fa-solid fa-warehouse"></i> Retirada em Filial Brasspress</span>`;
+        if (elLogDetalhe) elLogDetalhe.textContent = filial || "Filial não especificada";
+    } else if (tipo === "braspress_retira") {
+        const ret = DevolucaoState.logistica.braspressRetira;
+        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-amber-700 flex items-center gap-1.5"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
+        if (elLogDetalhe) elLogDetalhe.textContent = `${ret.logradouro || ''}, ${ret.numero || ''} - ${ret.bairro || ''} (${ret.cidade || ''}/${ret.uf || ''}) — CEP: ${ret.cep || ''}`;
+    } else if (tipo === "filial_makita") {
+        const mak = DevolucaoState.logistica.filialMakita;
+        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5"><i class="fa-solid fa-building-flag"></i> Retirada em Filial Makita</span>`;
+        if (elLogDetalhe) elLogDetalhe.textContent = `${mak?.nome || 'Makita'} (${mak?.unidade || ''}) — ${mak?.logradouro || ''} (${mak?.cidade || ''}/${mak?.uf || ''}) — Tel: ${mak?.telefone || ''}`;
+    } else if (tipo === "transportadora_regional") {
         const reg = DevolucaoState.logistica.transportadoraRegional;
-        document.getElementById("resumo-logistica-tipo").textContent = "Transportadora Regional Indicada";
-        document.getElementById("resumo-logistica-detalhe").textContent = `${reg.nome} (${reg.cidade}/${reg.uf}) — Tel: ${reg.telefone || "N/A"}`;
+        if (elLogTipo) elLogTipo.innerHTML = `<span class="text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> Transportadora Regional Indicada</span>`;
+        if (elLogDetalhe) elLogDetalhe.textContent = `${reg.nome || ''} ${reg.cnpj ? '(CNPJ: ' + reg.cnpj + ')' : ''} — ${reg.cidade || ''}/${reg.uf || ''} — Tel: ${reg.telefone || '-'}`;
     }
 
     document.getElementById("resumo-obs-gerais").textContent = DevolucaoState.observacoesGerais || "Sem observações adicionais.";
@@ -1175,11 +1292,14 @@ function exibirModalSucessoDevolucao(sol) {
  * Renderização da Aba de Histórico
  */
 async function renderHistorico() {
-    const listContainer = document.getElementById("historico-list-container");
+export async function renderHistorico() {
+    const listContainer = document.getElementById("historico-lista");
+    if (!listContainer) return;
+
     listContainer.innerHTML = `
         <div class="p-8 text-center text-slate-500">
-            <i class="fa-solid fa-spinner fa-spin text-2xl text-[#008497] mb-2"></i>
-            <p>Carregando histórico de solicitações...</p>
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-[#008497]"></i>
+            <p>Carregando histórico de devoluções...</p>
         </div>
     `;
 
@@ -1232,19 +1352,9 @@ async function renderHistorico() {
                     </span>
                 </td>
 
-                <!-- 5. Logística (Texto completo sem truncamento) -->
+                <!-- 5. Logística (4 Modalidades) -->
                 <td class="whitespace-nowrap">
-                    ${sol.logistica?.tipo === "braspress" ? `
-                        <div class="font-semibold text-[#008497] flex items-center gap-1.5 text-xs">
-                            <i class="fa-solid fa-warehouse text-[#008497]"></i> Braspress
-                        </div>
-                        <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.filialBraspress || "Filial não informada"}</div>
-                    ` : `
-                        <div class="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
-                            <i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
-                        </div>
-                        <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.cidadeOrigem || ""} ${sol.logistica?.ufOrigem ? '(' + sol.logistica.ufOrigem + ')' : ''}</div>
-                    `}
+                    ${_formatLogisticaColuna(sol.logistica)}
                 </td>
 
                 <!-- 6. Coluna Específica para Status -->
@@ -1338,43 +1448,41 @@ function _filtrarERenderizarAdmGeral() {
     }
 
     // Atualiza KPIs Principais
-    // 1. Total de Solicitações: quantidade total de solicitações lançadas pelos usuários
     const totalSolic = filtradas.length;
 
-    // 2. Ativos / Itens Devolvidos: quantidade total de ativos/itens solicitados para devolução
     const totalItens = filtradas.reduce((acc, s) => {
         const q = s.itens ? s.itens.reduce((sum, it) => sum + Number(it.quantidadeDevolvida || it.quantidade || 1), 0) : Number(s.totalItens || 0);
         return acc + q;
     }, 0);
 
-    // 3. Despacho Braspress: quantidade de solicitações Braspress cujo status foi alterado dentro do botão ações
     const totalBraspress = filtradas.filter(s => {
         const isBraspress = (s.logistica?.tipo === "braspress" || s.status === "brasspress");
         const statusAlterado = (s.status && s.status !== "pendente") || (Array.isArray(s.historico_status) && s.historico_status.length > 0);
         return isBraspress && statusAlterado;
     }).length;
 
-    // 4. Transp. Regionais: quantidade de solicitações Regionais cujo status foi alterado dentro do botão ações
     const totalRegional = filtradas.filter(s => {
         const isRegional = (s.logistica?.tipo === "transportadora_regional" || (s.logistica?.tipo !== "braspress" && s.status !== "brasspress"));
         const statusAlterado = (s.status && s.status !== "pendente") || (Array.isArray(s.historico_status) && s.historico_status.length > 0);
         return isRegional && statusAlterado;
     }).length;
 
-    const elKpiSolic = document.getElementById("adm-main-kpi-total-solic");
-    if (elKpiSolic) elKpiSolic.textContent = totalSolic;
-    const elKpiItens = document.getElementById("adm-main-kpi-total-itens");
-    if (elKpiItens) elKpiItens.textContent = `${totalItens} un`;
-    const elKpiBraspress = document.getElementById("adm-main-kpi-braspress");
-    if (elKpiBraspress) elKpiBraspress.textContent = totalBraspress;
-    const elKpiRegional = document.getElementById("adm-main-kpi-regional");
-    if (elKpiRegional) elKpiRegional.textContent = totalRegional;
+    // Atualiza badges/cards de KPI no DOM
+    const kpiSolic = document.getElementById("kpi-adm-total-solicitacoes");
+    const kpiItens = document.getElementById("kpi-adm-total-itens");
+    const kpiBras = document.getElementById("kpi-adm-despacho-braspress");
+    const kpiReg = document.getElementById("kpi-adm-transp-regionais");
+
+    if (kpiSolic) kpiSolic.textContent = totalSolic;
+    if (kpiItens) kpiItens.textContent = totalItens;
+    if (kpiBras) kpiBras.textContent = totalBraspress;
+    if (kpiReg) kpiReg.textContent = totalRegional;
 
     if (filtradas.length === 0) {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-16 bg-white">
+                    <td colspan="8" class="text-center py-12 bg-white">
                         <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-2xl mx-auto mb-3">
                             <i class="fa-solid fa-inbox"></i>
                         </div>
@@ -1433,19 +1541,9 @@ function _filtrarERenderizarAdmGeral() {
                         </span>
                     </td>
 
-                    <!-- 6. Logística (Texto completo sem truncamento) -->
+                    <!-- 6. Logística (4 Modalidades) -->
                     <td class="whitespace-nowrap">
-                        ${sol.logistica?.tipo === "braspress" ? `
-                            <div class="font-semibold text-[#008497] flex items-center gap-1.5 text-xs">
-                                <i class="fa-solid fa-warehouse text-[#008497]"></i> Braspress
-                            </div>
-                            <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.filialBraspress || "Filial não informada"}</div>
-                        ` : `
-                            <div class="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
-                                <i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> ${sol.logistica?.transportadoraRegional?.nome || "Transp. Regional"}
-                            </div>
-                            <div class="text-[11px] text-[#0f172a] font-normal mt-0.5">${sol.logistica?.cidadeOrigem || ""} ${sol.logistica?.ufOrigem ? '(' + sol.logistica.ufOrigem + ')' : ''}</div>
-                        `}
+                        ${_formatLogisticaColuna(sol.logistica)}
                     </td>
 
                     <!-- 7. Status (Badge Minimalista Padrão Passagens) -->
@@ -1703,16 +1801,36 @@ function initEventListeners() {
                 DevolucaoState.volumes.pesoAproximadoKg = document.getElementById("input-peso-volumes")?.value || "";
                 DevolucaoState.volumes.observacoesEmbalagem = document.getElementById("input-obs-volumes")?.value || "";
             } else if (DevolucaoState.etapaAtual === 3) {
-                if (DevolucaoState.logistica.tipo === "braspress") {
+                const tipo = DevolucaoState.logistica.tipo || "braspress";
+                if (tipo === "braspress") {
                     DevolucaoState.logistica.filialBraspress = document.getElementById("select-filial-braspress")?.value || "";
                     DevolucaoState.logistica.filialOutraTexto = document.getElementById("input-filial-braspress-outra")?.value || "";
-                } else {
+                } else if (tipo === "braspress_retira") {
+                    DevolucaoState.logistica.braspressRetira = {
+                        cep: (document.getElementById("input-retira-cep")?.value || "").replace(/\D/g, ""),
+                        logradouro: document.getElementById("input-retira-rua")?.value || "",
+                        numero: document.getElementById("input-retira-numero")?.value || "",
+                        complemento: document.getElementById("input-retira-complemento")?.value || "",
+                        bairro: document.getElementById("input-retira-bairro")?.value || "",
+                        cidade: document.getElementById("input-retira-cidade")?.value || "",
+                        uf: (document.getElementById("input-retira-uf")?.value || "").toUpperCase(),
+                        referencia: document.getElementById("input-retira-referencia")?.value || "",
+                        telefone: document.getElementById("input-retira-telefone")?.value || "",
+                        observacoes: document.getElementById("input-obs-gerais-etapa3")?.value || ""
+                    };
+                } else if (tipo === "filial_makita") {
+                    // Filial selecionada já configurada no clique do card
+                } else if (tipo === "transportadora_regional") {
                     DevolucaoState.logistica.transportadoraRegional = {
+                        cnpj: (document.getElementById("input-reg-cnpj")?.value || "").replace(/\D/g, ""),
                         nome: document.getElementById("input-reg-nome")?.value || "",
+                        nomeFantasia: document.getElementById("input-reg-fantasia")?.value || "",
                         telefone: document.getElementById("input-reg-tel")?.value || "",
+                        logradouro: document.getElementById("input-reg-endereco")?.value || "",
                         cidade: document.getElementById("input-reg-cidade")?.value || "",
-                        uf: document.getElementById("input-reg-uf")?.value || "",
-                        contato: document.getElementById("input-reg-contato")?.value || ""
+                        uf: (document.getElementById("input-reg-uf")?.value || "").toUpperCase(),
+                        contato: document.getElementById("input-reg-contato")?.value || "",
+                        motivo: document.getElementById("input-reg-motivo")?.value || ""
                     };
                     DevolucaoState.logistica.motivoEscolhaRegional = document.getElementById("input-reg-motivo")?.value || "";
                 }
@@ -1829,14 +1947,60 @@ function initEventListeners() {
         const optVal = `${f.cidade} - ${f.nomeFantasia} (${f.sigla}) / ${f.uf}`;
         selecionarFilialBraspress(optVal, f);
 
-        showToast(`Filial Braspress ${f.nomeFantasia} (${f.sigla}) identificada como a mais próxima!`, "success");
-    }
+    // 8.2. Busca de CEP para Brasspress Retira no Endereço
+    const btnBuscarRetiraCep = document.getElementById("btn-buscar-retira-cep");
+    const inputRetiraCep = document.getElementById("input-retira-cep");
 
-    btnBuscarCep?.addEventListener("click", handleBuscarFilialPorCep);
-    inputCep?.addEventListener("keydown", (e) => {
+    btnBuscarRetiraCep?.addEventListener("click", () => {
+        buscarCepRetiraEndereco(inputRetiraCep?.value);
+    });
+    inputRetiraCep?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
-            handleBuscarFilialPorCep();
+            buscarCepRetiraEndereco(inputRetiraCep?.value);
+        }
+    });
+
+    // 8.3. Busca de CNPJ para Transportadora Regional
+    const btnBuscarRegCnpj = document.getElementById("btn-buscar-reg-cnpj");
+    const inputRegCnpj = document.getElementById("input-reg-cnpj");
+
+    btnBuscarRegCnpj?.addEventListener("click", () => {
+        buscarCnpjTransportadora(inputRegCnpj?.value);
+    });
+    inputRegCnpj?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            buscarCnpjTransportadora(inputRegCnpj?.value);
+        }
+    });
+
+    // 8.4. Botão de Execução de Exclusão no Modal Customizado
+    document.getElementById("btn-executar-exclusao-modal")?.addEventListener("click", async () => {
+        if (!_solicitacaoParaExcluir) return;
+        const sol = _solicitacaoParaExcluir;
+        const id = sol.id || sol.protocolo;
+        const protStr = sol.protocolo || id;
+
+        fecharModalConfirmarExclusao();
+
+        // Remoção otimista da interface
+        if (_todasSolicitacoesCache) {
+            _todasSolicitacoesCache = _todasSolicitacoesCache.filter(s => s.id !== id && s.protocolo !== id && s !== sol);
+            _filtrarERenderizarAdmGeral();
+        }
+        if (HistoricoState.solicitacoes) {
+            HistoricoState.solicitacoes = HistoricoState.solicitacoes.filter(s => s.id !== id && s.protocolo !== id && s !== sol);
+            renderHistorico();
+        }
+
+        showToast(`Solicitação ${protStr} excluída com sucesso.`, "success");
+
+        try {
+            await excluirSolicitacao(id);
+        } catch (err) {
+            console.error("Erro ao persistir exclusão no Firestore:", err);
+            showToast("Erro ao sincronizar exclusão com o Firestore.", "warning");
         }
     });
 
@@ -2217,14 +2381,25 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
         const elLogEnd = document.getElementById("modal-det-log-endereco");
 
         if (sol.logistica?.tipo === "braspress") {
-            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-warehouse"></i> Braspress</span>`;
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-warehouse"></i> Braspress (Entrega em Filial)</span>`;
             if (elLogDestino) elLogDestino.textContent = sol.logistica?.filialBraspress || "Filial não informada";
             if (elLogEnd) elLogEnd.textContent = "Entrega direta na filial Braspress selecionada";
+        } else if (sol.logistica?.tipo === "braspress_retira") {
+            const ret = sol.logistica?.braspressRetira;
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-amber-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
+            if (elLogDestino) elLogDestino.textContent = `Coleta: ${ret?.logradouro || "-"}, ${ret?.numero || "-"} - ${ret?.bairro || "-"}`;
+            if (elLogEnd) elLogEnd.textContent = `${ret?.cidade || "-"}/${ret?.uf || "-"} — CEP: ${ret?.cep || "-"} ${ret?.telefone ? '— Tel: ' + ret.telefone : ''}`;
+        } else if (sol.logistica?.tipo === "filial_makita") {
+            const mak = sol.logistica?.filialMakita;
+            if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-building-flag"></i> Filial Oficial Makita</span>`;
+            if (elLogDestino) elLogDestino.textContent = `${mak?.nome || "Filial Makita"} (${mak?.unidade || ""})`;
+            if (elLogEnd) elLogEnd.textContent = `${mak?.logradouro || ""} - ${mak?.cidade || ""}/${mak?.uf || ""} — Tel: ${mak?.telefone || ""}`;
         } else {
             const regNome = sol.logistica?.transportadoraRegional?.nome || "Transportadora Regional";
+            const regCnpj = sol.logistica?.transportadoraRegional?.cnpj || "";
             if (elLogTipo) elLogTipo.innerHTML = `<span class="text-slate-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> Transportadora Regional</span>`;
-            if (elLogDestino) elLogDestino.textContent = regNome;
-            if (elLogEnd) elLogEnd.textContent = `Origem: ${sol.logistica?.cidadeOrigem || "-"} / ${sol.logistica?.ufOrigem || "-"}`;
+            if (elLogDestino) elLogDestino.textContent = `${regNome} ${regCnpj ? '(CNPJ: ' + regCnpj + ')' : ''}`;
+            if (elLogEnd) elLogEnd.textContent = `Origem: ${sol.logistica?.cidadeOrigem || sol.logistica?.transportadoraRegional?.cidade || "-"} / ${sol.logistica?.ufOrigem || sol.logistica?.transportadoraRegional?.uf || "-"}`;
         }
 
         const elData = document.getElementById("modal-det-data");
@@ -2286,6 +2461,225 @@ export function fecharModalDetalhesSolicitacao() {
 window.appVerDetalhesSolicitacao = abrirModalDetalhesSolicitacao;
 window.abrirModalDetalhesSolicitacao = abrirModalDetalhesSolicitacao;
 window.fecharModalDetalhesSolicitacao = fecharModalDetalhesSolicitacao;
+
+/**
+ * Consulta de CEP para a modalidade Brasspress Retira no Endereço (ViaCEP + BrasilAPI Fallback)
+ */
+export async function buscarCepRetiraEndereco(cep) {
+    const cleanCep = (cep || "").replace(/\D/g, "");
+    if (cleanCep.length !== 8) {
+        showToast("Informe um CEP válido com 8 dígitos (Ex: 01310-100).", "warning");
+        return;
+    }
+
+    const btn = document.getElementById("btn-buscar-retira-cep");
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando...';
+    }
+
+    try {
+        let data = null;
+        try {
+            const resp = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+            if (resp.ok) {
+                const json = await resp.json();
+                if (!json.erro) data = json;
+            }
+        } catch (e) {}
+
+        if (!data) {
+            try {
+                const resp2 = await fetch(`https://brasilapi.com.br/api/cep/v1/${cleanCep}`);
+                if (resp2.ok) {
+                    const json2 = await resp2.json();
+                    data = {
+                        logradouro: json2.street,
+                        bairro: json2.neighborhood,
+                        localidade: json2.city,
+                        uf: json2.state
+                    };
+                }
+            } catch (e) {}
+        }
+
+        if (!data) {
+            showToast("CEP não encontrado. Por favor, preencha o endereço manualmente.", "warning");
+            return;
+        }
+
+        const elRua = document.getElementById("input-retira-rua");
+        const elBairro = document.getElementById("input-retira-bairro");
+        const elCidade = document.getElementById("input-retira-cidade");
+        const elUf = document.getElementById("input-retira-uf");
+        const elNum = document.getElementById("input-retira-numero");
+
+        if (elRua) elRua.value = data.logradouro || "";
+        if (elBairro) elBairro.value = data.bairro || "";
+        if (elCidade) elCidade.value = data.localidade || "";
+        if (elUf) elUf.value = data.uf || "";
+
+        DevolucaoState.logistica.braspressRetira = {
+            ...DevolucaoState.logistica.braspressRetira,
+            cep: cleanCep,
+            logradouro: data.logradouro || "",
+            bairro: data.bairro || "",
+            cidade: data.localidade || "",
+            uf: data.uf || ""
+        };
+
+        if (elNum) elNum.focus();
+        showToast(`Endereço localizado: ${data.logradouro} (${data.localidade}/${data.uf})`, "success");
+    } catch (err) {
+        showToast("Erro ao consultar CEP. Preencha os campos manualmente.", "warning");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Buscar CEP';
+        }
+    }
+}
+
+/**
+ * Consulta de CNPJ para a modalidade Transportadora Regional (BrasilAPI + OpenCNPJ Fallback)
+ */
+export async function buscarCnpjTransportadora(cnpj) {
+    const cleanCnpj = (cnpj || "").replace(/\D/g, "");
+    if (cleanCnpj.length !== 14) {
+        showToast("Informe um CNPJ válido com 14 dígitos (Ex: 12.345.678/0001-90).", "warning");
+        return;
+    }
+
+    const btn = document.getElementById("btn-buscar-reg-cnpj");
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Consultando...';
+    }
+
+    try {
+        let data = null;
+        try {
+            const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+            if (resp.ok) data = await resp.json();
+        } catch (e) {}
+
+        if (!data) {
+            try {
+                const resp2 = await fetch(`https://open.cnpja.com/office/${cleanCnpj}`);
+                if (resp2.ok) {
+                    const json2 = await resp2.json();
+                    data = {
+                        razao_social: json2.company?.name || json2.alias,
+                        nome_fantasia: json2.alias || json2.company?.name,
+                        ddd_telefone_1: json2.phones?.[0]?.number || "",
+                        logradouro: `${json2.address?.street || ""}, ${json2.address?.number || ""}`,
+                        municipio: json2.address?.city,
+                        uf: json2.address?.state
+                    };
+                }
+            } catch (e) {}
+        }
+
+        if (!data) {
+            showToast("CNPJ não encontrado na Receita Federal. Preencha os campos manualmente.", "warning");
+            return;
+        }
+
+        const razao = data.razao_social || data.nome || "";
+        const fantasia = data.nome_fantasia || data.fantasia || razao;
+        const tel = data.ddd_telefone_1 || data.telefone || "";
+        const endCompleto = [data.descricao_tipo_de_logradouro, data.logradouro, data.numero, data.complemento, data.bairro].filter(Boolean).join(" ");
+        const cidade = data.municipio || data.cidade || "";
+        const uf = data.uf || "";
+
+        const elNome = document.getElementById("input-reg-nome");
+        const elFantasia = document.getElementById("input-reg-fantasia");
+        const elTel = document.getElementById("input-reg-tel");
+        const elEnd = document.getElementById("input-reg-endereco");
+        const elCidade = document.getElementById("input-reg-cidade");
+        const elUf = document.getElementById("input-reg-uf");
+
+        if (elNome) elNome.value = razao;
+        if (elFantasia) elFantasia.value = fantasia;
+        if (elTel) elTel.value = tel;
+        if (elEnd) elEnd.value = endCompleto;
+        if (elCidade) elCidade.value = cidade;
+        if (elUf) elUf.value = uf;
+
+        DevolucaoState.logistica.transportadoraRegional = {
+            ...DevolucaoState.logistica.transportadoraRegional,
+            cnpj: cleanCnpj,
+            nome: razao,
+            nomeFantasia: fantasia,
+            telefone: tel,
+            logradouro: endCompleto,
+            cidade: cidade,
+            uf: uf
+        };
+
+        showToast(`Transportadora localizada: ${razao} (${cidade}/${uf})`, "success");
+    } catch (err) {
+        showToast("Erro ao consultar CNPJ. Preencha os campos manualmente.", "warning");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Buscar CNPJ';
+        }
+    }
+}
+
+/**
+ * Modal Customizado de Confirmação de Exclusão de Solicitação
+ */
+let _solicitacaoParaExcluir = null;
+
+export function abrirModalConfirmarExclusao(idOuProt) {
+    const sol = _buscarSolicitacaoPorId(idOuProt);
+    if (!sol) {
+        showToast("Solicitação não encontrada para exclusão.", "warning");
+        return;
+    }
+
+    _solicitacaoParaExcluir = sol;
+
+    const modal = document.getElementById("modal-confirmar-exclusao");
+    if (!modal) return;
+
+    const elProt = document.getElementById("modal-exc-protocolo");
+    const elSol = document.getElementById("modal-exc-solicitante");
+    const elItens = document.getElementById("modal-exc-itens");
+    const elData = document.getElementById("modal-exc-data");
+
+    const totalAtivos = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
+    const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const nomeSol = sol.solicitante?.nome || sol.solicitante?.email?.split("@")[0] || "Promotor";
+
+    if (elProt) elProt.textContent = sol.protocolo || "S/ PROTOCOLO";
+    if (elSol) elSol.textContent = `${nomeSol} (${sol.solicitante?.email || '-'})`;
+    if (elItens) elItens.textContent = `${totalAtivos} item(ns)`;
+    if (elData) elData.textContent = dataFmt;
+
+    modal.classList.remove("hidden");
+    modal.style.removeProperty("display");
+    modal.style.setProperty("display", "flex", "important");
+    modal.style.zIndex = "999999";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+}
+
+export function fecharModalConfirmarExclusao() {
+    const modal = document.getElementById("modal-confirmar-exclusao");
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.style.setProperty("display", "none", "important");
+    }
+    _solicitacaoParaExcluir = null;
+}
+
+window.abrirModalConfirmarExclusao = abrirModalConfirmarExclusao;
+window.fecharModalConfirmarExclusao = fecharModalConfirmarExclusao;
+window.buscarCepRetiraEndereco = buscarCepRetiraEndereco;
+window.buscarCnpjTransportadora = buscarCnpjTransportadora;
 
 function prepararEImprimirProtocolo(sol) {
     const printSection = document.getElementById("print-protocol-content");
@@ -2447,30 +2841,7 @@ document.addEventListener("click", async (e) => {
             const novoStatusKey = actionBtn.dataset.status;
             window.appAlterarStatusSolicitacao(id, novoStatusKey);
         } else if (action === 'delete') {
-            const sol = _buscarSolicitacaoPorId(id);
-            const protStr = sol?.protocolo || id;
-            
-            const confirmou = confirm(`Deseja realmente excluir esta solicitação de devolução (${protStr})?\nEsta ação não poderá ser desfeita.`);
-            if (!confirmou) return;
-
-            // Remoção otimista da interface
-            if (_todasSolicitacoesCache) {
-                _todasSolicitacoesCache = _todasSolicitacoesCache.filter(s => s.id !== id && s.protocolo !== id);
-                _filtrarERenderizarAdmGeral();
-            }
-            if (HistoricoState.solicitacoes) {
-                HistoricoState.solicitacoes = HistoricoState.solicitacoes.filter(s => s.id !== id && s.protocolo !== id);
-                renderHistorico();
-            }
-
-            showToast(`Solicitação ${protStr} excluída com sucesso.`, "success");
-
-            try {
-                await excluirSolicitacao(id);
-            } catch (err) {
-                console.error("Erro ao persistir exclusão no Firestore:", err);
-                showToast("Erro ao sincronizar exclusão com o Firestore.", "warning");
-            }
+            abrirModalConfirmarExclusao(id);
         }
         return;
     }

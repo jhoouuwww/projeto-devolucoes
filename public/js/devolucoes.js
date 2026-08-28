@@ -18,15 +18,47 @@ export const DevolucaoState = {
         observacoesEmbalagem: ""
     },
     logistica: {
-        tipo: "braspress", // 'braspress' ou 'transportadora_regional'
+        tipo: "braspress", // 'braspress', 'braspress_retira', 'filial_makita', 'transportadora_regional'
         filialBraspress: "São Paulo - Matriz/Vila Maria (SP)",
         filialOutraTexto: "",
-        transportadoraRegional: {
-            nome: "",
-            telefone: "",
+        braspressRetira: {
+            cep: "",
+            logradouro: "",
+            numero: "",
+            complemento: "",
+            bairro: "",
             cidade: "",
             uf: "",
-            contato: ""
+            referencia: "",
+            telefone: "",
+            observacoes: ""
+        },
+        filialMakita: {
+            id: "sbc_cd",
+            nome: "São Bernardo do Campo (SP)",
+            unidade: "Centro de Distribuição & Comercial",
+            cnpj: "45.865.920/0001-00",
+            logradouro: "Rua Makita Brasil, 200",
+            bairro: "Bairro Cooperativa",
+            cidade: "São Bernardo do Campo",
+            uf: "SP",
+            cep: "09852-080",
+            telefone: "(11) 2199-2500"
+        },
+        transportadoraRegional: {
+            cnpj: "",
+            nome: "",
+            nomeFantasia: "",
+            telefone: "",
+            logradouro: "",
+            numero: "",
+            complemento: "",
+            bairro: "",
+            cidade: "",
+            uf: "",
+            cep: "",
+            contato: "",
+            motivo: ""
         },
         motivoEscolhaRegional: ""
     },
@@ -117,17 +149,49 @@ export async function carregarSolicitacaoParaEdicao(sol) {
         observacoesEmbalagem: sol.volumes?.observacoesEmbalagem || ""
     };
 
-    // 4. Popula logística
+    // 4. Popula logística para qualquer uma das 4 modalidades
     DevolucaoState.logistica = {
         tipo: sol.logistica?.tipo || "braspress",
         filialBraspress: sol.logistica?.filialBraspress || "São Paulo - Matriz/Vila Maria (SP)",
-        filialOutraTexto: "",
+        filialOutraTexto: sol.logistica?.filialOutraTexto || "",
+        braspressRetira: {
+            cep: sol.logistica?.braspressRetira?.cep || "",
+            logradouro: sol.logistica?.braspressRetira?.logradouro || "",
+            numero: sol.logistica?.braspressRetira?.numero || "",
+            complemento: sol.logistica?.braspressRetira?.complemento || "",
+            bairro: sol.logistica?.braspressRetira?.bairro || "",
+            cidade: sol.logistica?.braspressRetira?.cidade || "",
+            uf: sol.logistica?.braspressRetira?.uf || "",
+            referencia: sol.logistica?.braspressRetira?.referencia || "",
+            telefone: sol.logistica?.braspressRetira?.telefone || "",
+            observacoes: sol.logistica?.braspressRetira?.observacoes || ""
+        },
+        filialMakita: {
+            id: sol.logistica?.filialMakita?.id || "sbc_cd",
+            nome: sol.logistica?.filialMakita?.nome || "São Bernardo do Campo (SP)",
+            unidade: sol.logistica?.filialMakita?.unidade || "Centro de Distribuição & Comercial",
+            cnpj: sol.logistica?.filialMakita?.cnpj || "45.865.920/0001-00",
+            logradouro: sol.logistica?.filialMakita?.logradouro || "Rua Makita Brasil, 200",
+            bairro: sol.logistica?.filialMakita?.bairro || "Bairro Cooperativa",
+            cidade: sol.logistica?.filialMakita?.cidade || "São Bernardo do Campo",
+            uf: sol.logistica?.filialMakita?.uf || "SP",
+            cep: sol.logistica?.filialMakita?.cep || "09852-080",
+            telefone: sol.logistica?.filialMakita?.telefone || "(11) 2199-2500"
+        },
         transportadoraRegional: {
+            cnpj: sol.logistica?.transportadoraRegional?.cnpj || "",
             nome: sol.logistica?.transportadoraRegional?.nome || "",
+            nomeFantasia: sol.logistica?.transportadoraRegional?.nomeFantasia || "",
             telefone: sol.logistica?.transportadoraRegional?.telefone || "",
+            logradouro: sol.logistica?.transportadoraRegional?.logradouro || "",
+            numero: sol.logistica?.transportadoraRegional?.numero || "",
+            complemento: sol.logistica?.transportadoraRegional?.complemento || "",
+            bairro: sol.logistica?.transportadoraRegional?.bairro || "",
             cidade: sol.logistica?.transportadoraRegional?.cidade || sol.logistica?.cidadeOrigem || "",
             uf: sol.logistica?.transportadoraRegional?.uf || sol.logistica?.ufOrigem || "",
-            contato: sol.logistica?.transportadoraRegional?.contato || ""
+            cep: sol.logistica?.transportadoraRegional?.cep || "",
+            contato: sol.logistica?.transportadoraRegional?.contato || "",
+            motivo: sol.logistica?.transportadoraRegional?.motivo || sol.logistica?.motivoEscolhaRegional || ""
         },
         motivoEscolhaRegional: sol.logistica?.motivoEscolhaRegional || ""
     };
@@ -182,17 +246,37 @@ export function validarEtapa(etapa) {
     }
 
     if (etapa === 3) {
-        if (DevolucaoState.logistica.tipo === "braspress") {
+        const tipo = DevolucaoState.logistica.tipo;
+        if (tipo === "braspress") {
             if (!DevolucaoState.logistica.filialBraspress && !DevolucaoState.logistica.filialOutraTexto) {
-                return { valido: false, mensagem: "Selecione ou informe a filial Braspress para retirada." };
+                return { valido: false, mensagem: "Selecione ou informe a filial Braspress para entrega." };
             }
-        } else if (DevolucaoState.logistica.tipo === "transportadora_regional") {
+        } else if (tipo === "braspress_retira") {
+            const end = DevolucaoState.logistica.braspressRetira;
+            if (!end.cep || end.cep.replace(/\D/g, "").length !== 8) {
+                return { valido: false, mensagem: "Informe um CEP válido para a coleta no endereço pela Braspress." };
+            }
+            if (!end.logradouro || !end.cidade || !end.uf) {
+                return { valido: false, mensagem: "Preencha o endereço completo (Rua, Cidade, UF) para a coleta." };
+            }
+            if (!end.numero || end.numero.trim().length === 0) {
+                return { valido: false, mensagem: "Informe o número do endereço para a coleta da Braspress." };
+            }
+        } else if (tipo === "filial_makita") {
+            const fil = DevolucaoState.logistica.filialMakita;
+            if (!fil || !fil.nome) {
+                return { valido: false, mensagem: "Selecione a filial oficial da Makita do Brasil de sua preferência." };
+            }
+        } else if (tipo === "transportadora_regional") {
             const reg = DevolucaoState.logistica.transportadoraRegional;
+            if (!reg.cnpj || reg.cnpj.replace(/\D/g, "").length !== 14) {
+                return { valido: false, mensagem: "Informe um CNPJ válido de 14 dígitos da transportadora regional." };
+            }
             if (!reg.nome || reg.nome.trim().length < 2) {
-                return { valido: false, mensagem: "Informe o nome/razão social da transportadora regional." };
+                return { valido: false, mensagem: "Informe a Razão Social da transportadora regional (utilize o botão Buscar CNPJ)." };
             }
             if (!reg.cidade || !reg.uf) {
-                return { valido: false, mensagem: "Informe a cidade e UF da base da transportadora." };
+                return { valido: false, mensagem: "Informe a cidade e UF da base da transportadora regional." };
             }
         }
         return { valido: true };
