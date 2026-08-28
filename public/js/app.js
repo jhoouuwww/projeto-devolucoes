@@ -386,9 +386,7 @@ function updateAuthUI() {
 
     // Configuração de Perfil: Jonathan Melgaço / Admin vs Promotores
     const emailLower = String(AuthState.profile?.email || "").toLowerCase().trim();
-    const isUserAdmin = AuthState.profile?.isAdmin === true || 
-                        ADMIN_EMAILS.includes(emailLower) ||
-                        emailLower.includes("j_melgaco");
+    const isUserAdmin = emailLower === "j_melgaco@makita.com.br" || emailLower.startsWith("j_melgaco@") || emailLower === "88901" || AuthState.profile?.protheus === "88901";
 
     const headerButtons = document.getElementById("header-buttons");
     const containerMiniRelat = document.getElementById("container-mini-relatorio");
