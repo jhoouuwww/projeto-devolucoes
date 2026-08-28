@@ -221,14 +221,27 @@ export async function buscarVinculoProtheus(inputStr) {
         console.warn("Aviso ao consultar Firestore para vínculo Protheus:", err.message);
     }
 
-    // Se não encontrou em NENHUMA base de promotores/admins autorizados, retorna null
+    // 4. Fallback para qualquer colaborador com e-mail corporativo Makita
+    if (term.endsWith("@makita.com.br") || term.endsWith("@makitabr.onmicrosoft.com")) {
+        const username = cleanUser.replace(/[._-]/g, " ");
+        return {
+            protheus: "99999",
+            nome: username,
+            filial: "01 - Matriz",
+            cargo: "Promotor Técnico",
+            isAdmin: ADMIN_EMAILS.includes(term) || cleanUser === "j_melgaco",
+            email: term
+        };
+    }
+
+    // Se não pertence ao domínio corporativo nem à base autorizada, retorna null
     return null;
 }
 
 /**
  * Validação e Processamento de Usuário Logado
  */
-async function processarUsuarioLogado(firebaseUser) {
+async function processarUsuarioLogado(firebaseUser, vinculoPreCarregado = null) {
     if (!firebaseUser) {
         AuthState.user = null;
         AuthState.profile = null;
@@ -243,7 +256,7 @@ async function processarUsuarioLogado(firebaseUser) {
         email = `${email}@makita.com.br`;
     }
 
-    // Regra 1: Validação Estrita de Domínio Corporativo (@makita.com.br)
+    // Regra 1: Validação de Domínio Corporativo (@makita.com.br)
     const isDomainMakita = email.endsWith("@makita.com.br") || 
                            email.endsWith("@makitabr.onmicrosoft.com") ||
                            email === "j_melgaco@makita.com.br";
@@ -261,22 +274,24 @@ async function processarUsuarioLogado(firebaseUser) {
         return;
     }
 
-    // Regra 2: Consulta e Validação de Cadastro no Firestore / Base Autorizada
+    // Regra 2: Consulta de Vínculo Protheus
     const cleanUser = email.split("@")[0].trim();
     const isMasterAdmin = email === "j_melgaco@makita.com.br" || cleanUser === "j_melgaco" || cleanUser === "88901";
 
-    let vinculo = null;
-    if (isMasterAdmin) {
-        vinculo = {
-            protheus: "88901",
-            nome: "Jonathan Melgaço",
-            filial: "01 - Matriz",
-            cargo: "Administrador / Suporte",
-            isAdmin: true,
-            email: "j_melgaco@makita.com.br"
-        };
-    } else {
-        vinculo = await buscarVinculoProtheus(email);
+    let vinculo = vinculoPreCarregado;
+    if (!vinculo) {
+        if (isMasterAdmin) {
+            vinculo = {
+                protheus: "88901",
+                nome: "Jonathan Melgaço",
+                filial: "01 - Matriz",
+                cargo: "Administrador / Suporte",
+                isAdmin: true,
+                email: "j_melgaco@makita.com.br"
+            };
+        } else {
+            vinculo = await buscarVinculoProtheus(email);
+        }
     }
 
     if (!vinculo || !vinculo.protheus) {
@@ -287,7 +302,7 @@ async function processarUsuarioLogado(firebaseUser) {
         AuthState.user = null;
         AuthState.profile = null;
         AuthState.isAuthorized = false;
-        AuthState.errorMessage = `Acesso não autorizado: O e-mail "${email}" é corporativo, porém ainda não está cadastrado na base de promotores autorizados da Makita. Entre em contato com o suporte/administrador (j_melgaco@makita.com.br) para solicitar seu cadastro.`;
+        AuthState.errorMessage = `Acesso não autorizado: O e-mail "${email}" não foi localizado na base da Makita.`;
         notifyAuth();
         return;
     }
@@ -352,7 +367,7 @@ export async function simularLogin(emailSimulado) {
         localStorage.setItem("makita_auth_session", JSON.stringify(fakeUser));
     } catch (e) {}
 
-    await processarUsuarioLogado(fakeUser);
+    await processarUsuarioLogado(fakeUser, vinculo);
     return { success: true };
 }
 

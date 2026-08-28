@@ -1875,8 +1875,23 @@ window.carregarItensDoUsuario = carregarItensDoUsuario;
  */
 function initEventListeners() {
     // 1. Handlers de Eventos da Tela de Login
+    const btnLogin = document.getElementById("btn-seguinte");
+    const inputLogin = document.getElementById("login-email");
+
+    btnLogin?.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleMsLogin();
+    });
+
+    inputLogin?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleMsLogin();
+        }
+    });
+
     document.addEventListener("click", (e) => {
-        if (e.target.closest("#btn-seguinte, #btn-login-ms")) {
+        if (e.target && (e.target.id === "btn-seguinte" || e.target.closest("#btn-seguinte, #btn-login-ms"))) {
             e.preventDefault();
             handleMsLogin();
         }
