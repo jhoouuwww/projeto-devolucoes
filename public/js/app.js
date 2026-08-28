@@ -291,31 +291,31 @@ function updateAuthUI() {
         btnLoginMs.innerHTML = "Seguinte";
     }
     if (loginLoading) {
-        loginLoading.classList.add("hidden");
-        loginLoading.style.display = "none";
+        loginLoading.classList.add("hidden", "pointer-events-none");
+        loginLoading.style.setProperty("display", "none", "important");
     }
 
     if (!AuthState.user) {
         // Usuário deslogado → Exibe Tela de Login Microsoft Original
         if (loginScreen) {
             loginScreen.classList.remove("hidden");
-            loginScreen.style.display = "flex";
+            loginScreen.style.setProperty("display", "flex", "important");
         }
         if (appContainer) {
             appContainer.classList.add("hidden");
-            appContainer.style.display = "none";
+            appContainer.style.setProperty("display", "none", "important");
         }
         if (appHeader) {
             appHeader.classList.add("hidden");
-            appHeader.style.display = "none";
+            appHeader.style.setProperty("display", "none", "important");
         }
         if (appMain) {
             appMain.classList.add("hidden");
-            appMain.style.display = "none";
+            appMain.style.setProperty("display", "none", "important");
         }
         if (blockScreen) {
             blockScreen.classList.add("hidden");
-            blockScreen.style.display = "none";
+            blockScreen.style.setProperty("display", "none", "important");
         }
 
         const loginErrorEl = document.getElementById("login-error");
@@ -324,11 +324,11 @@ function updateAuthUI() {
                 loginErrorEl.textContent = AuthState.errorMessage;
                 loginErrorEl.classList.remove("hidden");
                 loginErrorEl.style.removeProperty("display");
-                loginErrorEl.style.display = "block";
+                loginErrorEl.style.setProperty("display", "block", "important");
             } else {
                 loginErrorEl.textContent = "";
                 loginErrorEl.classList.add("hidden");
-                loginErrorEl.style.display = "none";
+                loginErrorEl.style.setProperty("display", "none", "important");
             }
         }
         return;
@@ -338,23 +338,23 @@ function updateAuthUI() {
         // Logado porém SEM código Protheus ou domínio inválido → Tela de bloqueio
         if (loginScreen) {
             loginScreen.classList.add("hidden");
-            loginScreen.style.display = "none";
+            loginScreen.style.setProperty("display", "none", "important");
         }
         if (blockScreen) {
             blockScreen.classList.remove("hidden");
-            blockScreen.style.display = "flex";
+            blockScreen.style.setProperty("display", "flex", "important");
         }
         if (appContainer) {
             appContainer.classList.add("hidden");
-            appContainer.style.display = "none";
+            appContainer.style.setProperty("display", "none", "important");
         }
         if (appHeader) {
             appHeader.classList.add("hidden");
-            appHeader.style.display = "none";
+            appHeader.style.setProperty("display", "none", "important");
         }
         if (appMain) {
             appMain.classList.add("hidden");
-            appMain.style.display = "none";
+            appMain.style.setProperty("display", "none", "important");
         }
 
         const blockEmailEl = document.getElementById("block-user-email");
@@ -369,27 +369,27 @@ function updateAuthUI() {
     // Usuário autorizado e vinculado com sucesso!
     if (loginScreen) {
         loginScreen.classList.add("hidden");
-        loginScreen.style.display = "none";
+        loginScreen.style.setProperty("display", "none", "important");
     }
     if (loginLoading) {
-        loginLoading.classList.add("hidden");
-        loginLoading.style.display = "none";
+        loginLoading.classList.add("hidden", "pointer-events-none");
+        loginLoading.style.setProperty("display", "none", "important");
     }
     if (blockScreen) {
         blockScreen.classList.add("hidden");
-        blockScreen.style.display = "none";
+        blockScreen.style.setProperty("display", "none", "important");
     }
     if (appContainer) {
         appContainer.classList.remove("hidden");
-        appContainer.style.display = "flex";
+        appContainer.style.setProperty("display", "flex", "important");
     }
     if (appHeader) {
         appHeader.classList.remove("hidden");
-        appHeader.style.display = "block";
+        appHeader.style.setProperty("display", "block", "important");
     }
     if (appMain) {
         appMain.classList.remove("hidden");
-        appMain.style.display = "block";
+        appMain.style.setProperty("display", "block", "important");
     }
 
     // Preenche cabeçalho

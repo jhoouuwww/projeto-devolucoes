@@ -116,6 +116,7 @@
 
             <div class="pt-2">
                 <input type="email" id="login-email" placeholder="E-mail, telefone ou Skype" 
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();if(window.handleMsLogin)window.handleMsLogin();}"
                        class="w-full text-[15px] outline-none transition-all placeholder:text-[#666]">
             </div>
 
@@ -128,7 +129,7 @@
                 <button disabled class="bg-[#cccccc] text-[#666666] px-8 py-1.5 text-[15px] cursor-not-allowed min-w-[108px]">
                     Anterior
                 </button>
-                <button id="btn-seguinte" type="button" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-1.5 text-[15px] transition-colors shadow-sm cursor-pointer min-w-[108px] flex justify-center items-center">
+                <button id="btn-seguinte" type="button" onclick="if(window.handleMsLogin) window.handleMsLogin();" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-1.5 text-[15px] transition-colors shadow-sm cursor-pointer min-w-[108px] flex justify-center items-center">
                     Seguinte
                 </button>
             </div>
@@ -1666,6 +1667,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260828_194600"></script>
+    <script type="module" src="./js/app.js?v=20260828_195100"></script>
 </body>
 </html>
