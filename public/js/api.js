@@ -291,8 +291,10 @@ export async function gravarSolicitacaoNoFirestore(payload) {
             observacoesEmbalagem: payload.volumes.observacoesEmbalagem || ""
         },
         logistica: {
-            tipo: payload.logistica.tipo, // 'braspress' ou 'transportadora_regional'
+            tipo: payload.logistica.tipo, // 'braspress', 'braspress_retira', 'filial_makita', 'transportadora_regional'
             filialBraspress: payload.logistica.filialBraspress || null,
+            braspressRetira: payload.logistica.braspressRetira || null,
+            filialMakita: payload.logistica.filialMakita || null,
             transportadoraRegional: payload.logistica.transportadoraRegional || null,
             motivoEscolhaRegional: payload.logistica.motivoEscolhaRegional || "",
             cidadeOrigem: payload.logistica.cidadeOrigem || "",
@@ -359,6 +361,8 @@ export async function atualizarSolicitacaoNoFirestore(id, payload) {
         logistica: {
             tipo: payload.logistica.tipo,
             filialBraspress: payload.logistica.filialBraspress || null,
+            braspressRetira: payload.logistica.braspressRetira || null,
+            filialMakita: payload.logistica.filialMakita || null,
             transportadoraRegional: payload.logistica.transportadoraRegional || null,
             motivoEscolhaRegional: payload.logistica.motivoEscolhaRegional || "",
             cidadeOrigem: payload.logistica.cidadeOrigem || "",

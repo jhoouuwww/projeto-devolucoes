@@ -334,10 +334,16 @@ export async function confirmarEGravarSolicitacao() {
             tipo: DevolucaoState.logistica.tipo,
             filialBraspress: DevolucaoState.logistica.tipo === "braspress" ? 
                 (DevolucaoState.logistica.filialBraspress === "outra" ? DevolucaoState.logistica.filialOutraTexto : DevolucaoState.logistica.filialBraspress) : null,
+            braspressRetira: DevolucaoState.logistica.tipo === "braspress_retira" ? DevolucaoState.logistica.braspressRetira : null,
+            filialMakita: DevolucaoState.logistica.tipo === "filial_makita" ? DevolucaoState.logistica.filialMakita : null,
             transportadoraRegional: DevolucaoState.logistica.tipo === "transportadora_regional" ? DevolucaoState.logistica.transportadoraRegional : null,
             motivoEscolhaRegional: DevolucaoState.logistica.motivoEscolhaRegional || "",
-            cidadeOrigem: DevolucaoState.logistica.transportadoraRegional.cidade || "",
-            ufOrigem: DevolucaoState.logistica.transportadoraRegional.uf || ""
+            cidadeOrigem: DevolucaoState.logistica.tipo === "transportadora_regional" 
+                ? (DevolucaoState.logistica.transportadoraRegional?.cidade || "") 
+                : (DevolucaoState.logistica.braspressRetira?.cidade || ""),
+            ufOrigem: DevolucaoState.logistica.tipo === "transportadora_regional" 
+                ? (DevolucaoState.logistica.transportadoraRegional?.uf || "") 
+                : (DevolucaoState.logistica.braspressRetira?.uf || "")
         },
         observacoesGerais: DevolucaoState.observacoesGerais || ""
     };
