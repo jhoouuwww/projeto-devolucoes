@@ -583,8 +583,35 @@ function _renderNFeTable() {
 
     // --- Empty state (no NFes for this user) ---
     if (!DevolucaoState.itensDisponiveis || DevolucaoState.itensDisponiveis.length === 0) {
-        emptyEl?.classList.remove("hidden");
-        emptyEl?.classList.add("flex");
+        if (emptyEl) {
+            const isAdmin = Boolean(AuthState.profile?.isAdmin || ADMIN_EMAILS.includes(AuthState.profile?.email));
+            if (isAdmin) {
+                emptyEl.innerHTML = `
+                    <div class="w-14 h-14 bg-[#008497]/10 rounded-full flex items-center justify-center text-[#008497] text-2xl">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Painel do Administrador Geral</p>
+                        <p class="text-xs text-slate-500 mt-1 max-w-md">Como administrador, sua conta gerencia todas as devoluções da equipe Makita do Brasil. Para visualizar e gerenciar as solicitações dos promotores, utilize a aba de gestão geral.</p>
+                    </div>
+                    <button type="button" onclick="window.appSetTab('adm-geral')" class="mt-2 px-4 py-2 bg-[#008497] hover:bg-[#006064] text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar para Todas as Solicitações
+                    </button>
+                `;
+            } else {
+                emptyEl.innerHTML = `
+                    <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 text-2xl">
+                        <i class="fa-solid fa-file-circle-xmark"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-600">Nenhuma nota fiscal encontrada</p>
+                        <p class="text-xs text-slate-400 mt-1">Não há NFes pendentes vinculadas ao seu código Protheus.<br>Entre em contato com o administrativo caso isso seja um engano.</p>
+                    </div>
+                `;
+            }
+            emptyEl.classList.remove("hidden");
+            emptyEl.classList.add("flex");
+        }
         noResultsEl?.classList.add("hidden");
         tableWrapper?.classList.add("hidden");
         footerEl?.classList.add("hidden");
@@ -1245,11 +1272,17 @@ export function fecharModalSucesso() {
         _nfeSearchTerm = "";
         _nfeFilterField = "todos";
         reiniciarFluxoDevolucao();
-        carregarItensDoUsuario().then(() => {
-            renderFluxoDevolucao();
-            renderMiniRelatorioAtivos();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        });
+        const isAdmin = Boolean(AuthState.profile?.isAdmin || ADMIN_EMAILS.includes(AuthState.profile?.email));
+        if (isAdmin) {
+            setTab("adm-geral");
+            renderAdmGeralScreen();
+        } else {
+            carregarItensDoUsuario().then(() => {
+                renderFluxoDevolucao();
+                renderMiniRelatorioAtivos();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        }
     }
 }
 
@@ -2050,10 +2083,17 @@ function initEventListeners() {
     // 6.1. Botão Cancelar Modo de Edição no Banner
     document.getElementById("btn-cancelar-edicao-banner")?.addEventListener("click", async () => {
         reiniciarFluxoDevolucao();
-        await carregarItensDoUsuario();
-        renderFluxoDevolucao();
-        renderMiniRelatorioAtivos();
-        showToast("Modo de edição cancelado. Pronto para nova solicitação.", "info");
+        const isAdmin = Boolean(AuthState.profile?.isAdmin || ADMIN_EMAILS.includes(AuthState.profile?.email));
+        if (isAdmin) {
+            setTab("adm-geral");
+            renderAdmGeralScreen();
+            showToast("Modo de edição cancelado. Retornando ao painel de administração.", "info");
+        } else {
+            await carregarItensDoUsuario();
+            renderFluxoDevolucao();
+            renderMiniRelatorioAtivos();
+            showToast("Modo de edição cancelado. Pronto para nova solicitação.", "info");
+        }
     });
 
     // 7. Botão Nova Devolução e Botão X de fechar dentro do Modal de Sucesso
