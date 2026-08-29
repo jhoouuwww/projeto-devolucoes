@@ -92,6 +92,9 @@ export function fecharModalCadPromotor() {
 }
 window.fecharModalCadPromotor = fecharModalCadPromotor;
 
+// Estado global do modal de detalhes
+let _modalDetalhesCurrentSol = null;
+
 // Navegação de Abas Principais (Nova Devolução vs Histórico vs Admin)
 let currentTab = "devolucao"; // 'devolucao', 'historico', 'admin', 'adm-geral'
 
@@ -2375,8 +2378,6 @@ function initEventListeners() {
         exportarSolicitacoesParaExcel();
     });
     // 12. Modal de Detalhes da Solicitação (Pop-up Moderno)
-let _modalDetalhesCurrentSol = null;
-
     document.getElementById("btn-fechar-modal-detalhes")?.addEventListener("click", fecharModalDetalhesSolicitacao);
     document.getElementById("btn-fechar-modal-detalhes-footer")?.addEventListener("click", fecharModalDetalhesSolicitacao);
     document.getElementById("btn-editar-modal-detalhes")?.addEventListener("click", async () => {
