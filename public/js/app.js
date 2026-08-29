@@ -37,6 +37,7 @@ import {
     cadastrarVinculoUsuario, 
     listarVinculosUsuarios, 
     carregarTodasSolicitacoes,
+    ouvirTodasSolicitacoesRealtime,
     cadastrarPromotorComSyncNfe
 } from "./admin.js";
 
@@ -47,6 +48,7 @@ import {
     excluirSolicitacao 
 } from "./api.js";
 
+import { db, doc, getDoc, collection, query, where, getDocs } from "./firebase.js";
 import { BRASPRESS_FILIAIS, buscarFilialBraspressPorCEP } from "./braspress.js";
 import { FILIAIS_MAKITA } from "./filiais_makita.js";
 
@@ -1374,11 +1376,19 @@ function _formatLogisticaColuna(logistica) {
 }
 
 /**
- * Renderiza o ID/Protocolo na tabela (sem tooltip, popup ou title ao passar o mouse)
+ * Renderiza o ID/Protocolo na tabela (sem tooltip flutuante, popup no hover ou atributo title)
+ * Clicável diretamente para abrir os detalhes da solicitação
  */
-function _renderIdTooltip(sol) {
+function _renderIdTooltip(sol, key) {
     const prot = sol.protocolo || sol.id || "S/ PROTOCOLO";
-    return `<span class="font-mono font-bold text-slate-800 text-xs tracking-tight">${prot}</span>`;
+    const targetKey = key || sol.id || sol.protocolo || "";
+    return `<button type="button" 
+                    class="font-mono font-bold text-[#008497] hover:text-[#006064] hover:underline cursor-pointer text-xs bg-transparent border-0 p-0 text-left transition-colors" 
+                    data-action="view" 
+                    data-id="${targetKey}" 
+                    onclick="window.appVerDetalhesSolicitacao('${targetKey}')">
+                ${prot}
+            </button>`;
 }
 
 
@@ -1419,7 +1429,7 @@ export async function renderHistorico() {
             <tr class="hover:bg-slate-50/80 transition-colors">
                 <!-- 1. ID / Protocolo -->
                 <td class="whitespace-nowrap">
-                    ${_renderIdTooltip(sol)}
+                    ${_renderIdTooltip(sol, key)}
                 </td>
 
                 <!-- 2. Data Registro -->
@@ -1490,11 +1500,12 @@ export async function renderHistorico() {
  * Renderização e Gestão da Tela Exclusiva de ADM (Jonathan Melgaço - Padrão Projeto Passagens)
  */
 let _todasSolicitacoesCache = [];
+let _unsubscribeAdmRealtime = null;
 
 export async function renderAdmGeralScreen() {
     const tbody = document.getElementById("tbody-adm-main-solicitacoes");
 
-    if (tbody) {
+    if (tbody && (!_todasSolicitacoesCache || _todasSolicitacoesCache.length === 0)) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center py-16 bg-white">
@@ -1507,12 +1518,20 @@ export async function renderAdmGeralScreen() {
 
     try {
         _todasSolicitacoesCache = await carregarTodasSolicitacoes();
+        _filtrarERenderizarAdmGeral();
     } catch (e) {
         console.error("Erro ao carregar solicitações para o ADM:", e);
         _todasSolicitacoesCache = [];
+        _filtrarERenderizarAdmGeral();
     }
 
-    _filtrarERenderizarAdmGeral();
+    // Inicia listener em tempo real para sincronizar assim que promotores enviarem novas solicitações
+    if (!_unsubscribeAdmRealtime) {
+        _unsubscribeAdmRealtime = ouvirTodasSolicitacoesRealtime((novasSolicitacoes) => {
+            _todasSolicitacoesCache = novasSolicitacoes;
+            _filtrarERenderizarAdmGeral();
+        });
+    }
 }
 
 function _filtrarERenderizarAdmGeral() {
@@ -1603,7 +1622,7 @@ function _filtrarERenderizarAdmGeral() {
                 <tr class="hover:bg-slate-50/80 transition-colors">
                     <!-- 1. ID / Protocolo -->
                     <td class="whitespace-nowrap">
-                        ${_renderIdTooltip(sol)}
+                        ${_renderIdTooltip(sol, key)}
                     </td>
 
                     <!-- 2. Data Registro -->
@@ -2473,9 +2492,34 @@ function _buscarSolicitacaoPorId(idOuProt) {
 /**
  * Abre o Modal Pop-up Moderno com Detalhes Completos da Solicitação (Sem Emojis, com FontAwesome Icons)
  */
-export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
-    const sol = _buscarSolicitacaoPorId(idOuProtocolo);
+export async function abrirModalDetalhesSolicitacao(idOuProtocolo) {
+    let sol = _buscarSolicitacaoPorId(idOuProtocolo);
     
+    // Se não encontrou na memória local, tenta buscar no Firestore diretamente
+    if (!sol && idOuProtocolo) {
+        try {
+            const rawId = String(idOuProtocolo).trim();
+            // 1. Busca por Document ID direto
+            const dRef = doc(db, "solicitacoes_devolucao", rawId);
+            const dSnap = await getDoc(dRef);
+            if (dSnap.exists()) {
+                sol = { id: dSnap.id, ...dSnap.data() };
+                registrarSolicitacao(sol);
+            } else {
+                // 2. Busca por Protocolo
+                const q = query(collection(db, "solicitacoes_devolucao"), where("protocolo", "==", rawId));
+                const qSnap = await getDocs(q);
+                if (!qSnap.empty) {
+                    const docItem = qSnap.docs[0];
+                    sol = { id: docItem.id, ...docItem.data() };
+                    registrarSolicitacao(sol);
+                }
+            }
+        } catch (err) {
+            console.warn("[abrirModalDetalhesSolicitacao] Falha na busca remota da solicitação:", err);
+        }
+    }
+
     if (!sol) {
         console.warn("[abrirModalDetalhesSolicitacao] Solicitação não encontrada para:", idOuProtocolo);
         showToast("Solicitação não encontrada no momento. Tente atualizar a lista.", "warning");
@@ -2491,16 +2535,29 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
     }
 
     try {
-        const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR");
+        let dataFmt = "-";
+        try {
+            const rawDate = sol.dataCriacao?.toDate ? sol.dataCriacao.toDate() : 
+                            (sol.criadoEm?.toDate ? sol.criadoEm.toDate() : 
+                            (sol.dataCriacao ? new Date(sol.dataCriacao) : 
+                            (sol.criadoEm ? new Date(sol.criadoEm) : new Date())));
+            if (!isNaN(rawDate.getTime())) {
+                dataFmt = rawDate.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+            }
+        } catch (e) {
+            dataFmt = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+        }
+
         const solicitanteNome = sol.solicitante?.nome || sol.solicitante?.email?.split("@")[0] || "Promotor";
         const solicitanteEmail = sol.solicitante?.email || "-";
         const protheus = sol.solicitante?.protheus || "-";
         const caixas = sol.volumes?.quantidadeCaixas || 1;
-        const totalQtd = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
+        const itensList = Array.isArray(sol.itens) ? sol.itens : (sol.produtos || []);
+        const totalQtd = itensList.length > 0 ? itensList.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || it.quantidade || it.qtd || 1), 0) : Number(sol.totalItens || 1);
 
         // Preenche cabeçalho
         const badgeProt = document.getElementById("modal-detalhes-protocolo-badge");
-        if (badgeProt) badgeProt.textContent = sol.protocolo || "S/ PROTOCOLO";
+        if (badgeProt) badgeProt.textContent = sol.protocolo || sol.id || "S/ PROTOCOLO";
 
         const badgeStatus = document.getElementById("modal-detalhes-status-badge");
         if (badgeStatus) {
@@ -2521,26 +2578,29 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
         const elLogDestino = document.getElementById("modal-det-log-destino");
         const elLogEnd = document.getElementById("modal-det-log-endereco");
 
-        if (sol.logistica?.tipo === "braspress") {
+        const log = sol.logistica || {};
+        const tipoLog = String(log.tipo || (sol.status === "brasspress" ? "braspress" : "")).toLowerCase();
+
+        if (tipoLog === "braspress") {
             if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-warehouse"></i> Braspress (Entrega em Filial)</span>`;
-            if (elLogDestino) elLogDestino.textContent = sol.logistica?.filialBraspress || "Filial não informada";
+            if (elLogDestino) elLogDestino.textContent = log.filialBraspress || sol.filialBraspress || "Filial não informada";
             if (elLogEnd) elLogEnd.textContent = "Entrega direta na filial Braspress selecionada";
-        } else if (sol.logistica?.tipo === "braspress_retira") {
-            const ret = sol.logistica?.braspressRetira;
+        } else if (tipoLog === "braspress_retira") {
+            const ret = log.braspressRetira || {};
             if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-pickup"></i> Brasspress Retira no Endereço</span>`;
-            if (elLogDestino) elLogDestino.textContent = `Coleta: ${ret?.logradouro || "-"}, ${ret?.numero || "-"} - ${ret?.bairro || "-"}`;
-            if (elLogEnd) elLogEnd.textContent = `${ret?.cidade || "-"}/${ret?.uf || "-"} — CEP: ${ret?.cep || "-"} ${ret?.telefone ? '— Tel: ' + ret.telefone : ''}`;
-        } else if (sol.logistica?.tipo === "filial_makita") {
-            const mak = sol.logistica?.filialMakita;
+            if (elLogDestino) elLogDestino.textContent = `Coleta: ${ret.logradouro || "-"}, ${ret.numero || "-"} - ${ret.bairro || "-"}`;
+            if (elLogEnd) elLogEnd.textContent = `${ret.cidade || "-"}/${ret.uf || "-"} — CEP: ${ret.cep || "-"} ${ret.telefone ? '— Tel: ' + ret.telefone : ''}`;
+        } else if (tipoLog === "filial_makita") {
+            const mak = log.filialMakita || {};
             if (elLogTipo) elLogTipo.innerHTML = `<span class="text-[#008497] flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-building-flag"></i> Filial Oficial Makita</span>`;
-            if (elLogDestino) elLogDestino.textContent = `${mak?.nome || "Filial Makita"} (${mak?.unidade || ""})`;
-            if (elLogEnd) elLogEnd.textContent = `${mak?.logradouro || ""} - ${mak?.cidade || ""}/${mak?.uf || ""} — Tel: ${mak?.telefone || ""}`;
+            if (elLogDestino) elLogDestino.textContent = `${mak.nome || "Filial Makita"} (${mak.unidade || ""})`;
+            if (elLogEnd) elLogEnd.textContent = `${mak.logradouro || ""} - ${mak.cidade || ""}/${mak.uf || ""} — Tel: ${mak.telefone || ""}`;
         } else {
-            const regNome = sol.logistica?.transportadoraRegional?.nome || "Transportadora Regional";
-            const regCnpj = sol.logistica?.transportadoraRegional?.cnpj || "";
+            const regNome = log.transportadoraRegional?.nome || log.nomeTransportadora || "Transportadora Regional";
+            const regCnpj = log.transportadoraRegional?.cnpj || log.cnpjTransportadora || "";
             if (elLogTipo) elLogTipo.innerHTML = `<span class="text-slate-700 flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-truck-ramp-box text-[#008497]"></i> Transportadora Regional</span>`;
             if (elLogDestino) elLogDestino.textContent = `${regNome} ${regCnpj ? '(CNPJ: ' + regCnpj + ')' : ''}`;
-            if (elLogEnd) elLogEnd.textContent = `Origem: ${sol.logistica?.cidadeOrigem || sol.logistica?.transportadoraRegional?.cidade || "-"} / ${sol.logistica?.ufOrigem || sol.logistica?.transportadoraRegional?.uf || "-"}`;
+            if (elLogEnd) elLogEnd.textContent = `Origem: ${log.cidadeOrigem || log.transportadoraRegional?.cidade || "-"} / ${log.ufOrigem || log.transportadoraRegional?.uf || "-"}`;
         }
 
         const elData = document.getElementById("modal-det-data");
@@ -2556,19 +2616,19 @@ export function abrirModalDetalhesSolicitacao(idOuProtocolo) {
         // Preenche tabela de itens
         const tbody = document.getElementById("modal-det-tbody-itens");
         const countBadge = document.getElementById("modal-det-itens-count");
-        if (countBadge) countBadge.textContent = `${sol.itens ? sol.itens.length : 0} ${sol.itens && sol.itens.length === 1 ? 'item' : 'itens'}`;
+        if (countBadge) countBadge.textContent = `${itensList.length} ${itensList.length === 1 ? 'item' : 'itens'}`;
 
         if (tbody) {
-            if (sol.itens && sol.itens.length > 0) {
-                tbody.innerHTML = sol.itens.map((it, idx) => `
+            if (itensList.length > 0) {
+                tbody.innerHTML = itensList.map((it, idx) => `
                     <tr class="border-b border-slate-100 hover:bg-slate-50/80 text-xs">
                         <td class="p-2.5 text-center font-semibold text-slate-400 align-middle">${idx + 1}</td>
-                        <td class="p-2.5 font-semibold text-[#0f172a] align-middle">${it.codigoItem || "-"}</td>
-                        <td class="p-2.5 text-[#0f172a] font-normal align-middle">${it.descricao || "-"}</td>
-                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.notaFiscal || "-"}</td>
-                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.pedido || "-"}</td>
+                        <td class="p-2.5 font-semibold text-[#0f172a] align-middle">${it.codigoItem || it.produto || it.codigo || "-"}</td>
+                        <td class="p-2.5 text-[#0f172a] font-normal align-middle">${it.descricao || it.desc || "-"}</td>
+                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.notaFiscal || it.nfRemessa || it.nf || "-"}</td>
+                        <td class="p-2.5 text-center text-[#64748b] font-normal align-middle">${it.pedido || it.numPedido || "-"}</td>
                         <td class="p-2.5 text-center font-semibold text-[#0f172a] align-middle">
-                            ${it.quantidadeDevolvida || 1} un
+                            ${it.quantidadeDevolvida || it.quantidade || it.qtd || 1} un
                         </td>
                     </tr>
                 `).join("");

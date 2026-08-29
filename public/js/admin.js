@@ -2,7 +2,7 @@
  * Módulo de Administração — Importador Direto do Excel e Vínculos Protheus
  */
 import { AuthState } from "./auth.js";
-import { db, doc, setDoc, collection, getDocs, addDoc, serverTimestamp, writeBatch } from "./firebase.js";
+import { db, doc, setDoc, collection, getDocs, addDoc, serverTimestamp, writeBatch, onSnapshot } from "./firebase.js";
 import { VINCULOS_INICIAIS } from "./config.js";
 
 export const AdminState = {
@@ -289,9 +289,53 @@ export async function carregarTodasSolicitacoes() {
         });
     } catch (e) {}
 
-    lista.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+    lista.sort((a, b) => {
+        const da = a.dataCriacao?.toDate ? a.dataCriacao.toDate() : new Date(a.dataCriacao || 0);
+        const db = b.dataCriacao?.toDate ? b.dataCriacao.toDate() : new Date(b.dataCriacao || 0);
+        return db - da;
+    });
     AdminState.todasSolicitacoes = lista;
     return lista;
+}
+
+/**
+ * Escuta todas as solicitações registradas no sistema em TEMPO REAL (onSnapshot)
+ */
+export function ouvirTodasSolicitacoesRealtime(callback) {
+    try {
+        const colRef = collection(db, "solicitacoes_devolucao");
+        return onSnapshot(colRef, (snap) => {
+            const lista = [];
+            snap.forEach(d => {
+                lista.push({ id: d.id, ...d.data() });
+            });
+
+            // Inclui locais (fallback de contingência)
+            try {
+                const localDevolucoes = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
+                localDevolucoes.forEach(loc => {
+                    if (!lista.some(item => (loc.protocolo && item.protocolo === loc.protocolo) || item.id === loc.id)) {
+                        lista.push(loc);
+                    }
+                });
+            } catch (e) {}
+
+            lista.sort((a, b) => {
+                const da = a.dataCriacao?.toDate ? a.dataCriacao.toDate() : new Date(a.dataCriacao || 0);
+                const db = b.dataCriacao?.toDate ? b.dataCriacao.toDate() : new Date(b.dataCriacao || 0);
+                return db - da;
+            });
+            AdminState.todasSolicitacoes = lista;
+            if (typeof callback === "function") {
+                callback(lista);
+            }
+        }, (err) => {
+            console.warn("[Admin Realtime] Erro no listener em tempo real:", err);
+        });
+    } catch (err) {
+        console.warn("[Admin Realtime] Falha ao iniciar listener:", err);
+        return () => {};
+    }
 }
 
 /**
