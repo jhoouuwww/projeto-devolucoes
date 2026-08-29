@@ -1374,118 +1374,16 @@ function _formatLogisticaColuna(logistica) {
 }
 
 /**
- * Renderiza o botão de ID/Protocolo com Tooltip Hover Rico (Tailwind CSS)
+ * Renderiza o ID/Protocolo na tabela (sem tooltip, popup ou title ao passar o mouse)
  */
-function _renderIdTooltip(sol, key) {
-    const prot = sol.protocolo || "S/ PROTOCOLO";
-    const statusObj = normalizarStatus(sol.status);
-    const dataFmt = new Date(sol.dataCriacao || Date.now()).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-    const solicitanteNome = sol.solicitante?.nome || sol.solicitante?.email?.split("@")[0] || "Promotor";
-    const solicitanteEmail = sol.solicitante?.email || "-";
-    const protheus = sol.solicitante?.protheus || "-";
-    const totalAtivos = sol.itens ? sol.itens.reduce((acc, it) => acc + Number(it.quantidadeDevolvida || 1), 0) : Number(sol.totalItens || 1);
-    const totalNFe = sol.itens ? (new Set(sol.itens.map(it => it.notaFiscal).filter(Boolean))).size || (new Set(sol.notasFiscais || [])).size || 1 : 1;
-    const caixas = sol.volumes?.quantidadeCaixas || 1;
-
-    let logisticaTexto = "Braspress (Filial)";
-    if (sol.logistica?.tipo === "braspress") {
-        logisticaTexto = `Braspress: ${sol.logistica?.filialBraspress || "Filial não informada"}`;
-    } else if (sol.logistica?.tipo === "braspress_retira") {
-        const ret = sol.logistica?.braspressRetira;
-        logisticaTexto = `Coleta Braspress: ${ret?.cidade || ""}/${ret?.uf || ""} (CEP: ${ret?.cep || "-"})`;
-    } else if (sol.logistica?.tipo === "filial_makita") {
-        const mak = sol.logistica?.filialMakita;
-        logisticaTexto = `Filial Makita: ${mak?.nome || "Unidade Oficial"}`;
-    } else {
-        const reg = sol.logistica?.transportadoraRegional;
-        logisticaTexto = `Regional: ${reg?.nome || "Transp. Regional"} (${reg?.cidade || sol.logistica?.cidadeOrigem || ""}/${reg?.uf || sol.logistica?.ufOrigem || ""})`;
-    }
-
-    // Amostra de itens para o tooltip
-    const itensPreview = (sol.itens && sol.itens.length > 0)
-        ? sol.itens.slice(0, 2).map(it => `
-            <div class="truncate text-[10px] text-slate-300 font-mono flex items-center justify-between gap-1">
-                <span class="truncate"><span class="text-[#00c5de] font-bold">${it.codigoItem || it.produto || "-"}</span> ${it.descricao || ""}</span>
-                <span class="text-[#00c5de] font-semibold shrink-0">${it.quantidadeDevolvida || 1} un</span>
-            </div>
-        `).join("")
-        : "";
-    const maisItens = (sol.itens && sol.itens.length > 2) ? `<div class="text-[9.5px] text-slate-400 font-medium">+ ${sol.itens.length - 2} outro(s) item(ns)...</div>` : "";
-
-    return `
-        <div class="relative inline-block group">
-            <button type="button" 
-                    class="font-semibold text-[#008497] hover:text-[#006064] hover:underline cursor-pointer text-xs flex items-center gap-1.5 bg-transparent border-0 p-0 text-left transition-colors" 
-                    onclick="window.appVerDetalhesSolicitacao('${key}')" 
-                    title="Clique para ver detalhes">
-                <span class="w-5 h-5 rounded-md bg-[#008497]/10 flex items-center justify-center text-[#008497] group-hover:bg-[#008497] group-hover:text-white transition-all shadow-2xs">
-                    <i class="fa-solid fa-eye text-[10px]"></i>
-                </span>
-                <span class="font-mono font-bold tracking-tight">${prot}</span>
-            </button>
-
-            <!-- Tooltip Hover Rico com Informações da Devolução (Tailwind CSS) -->
-            <div class="absolute left-0 top-full mt-2 w-72 sm:w-80 p-3 bg-slate-900/95 text-white text-xs rounded-xl shadow-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[999] border border-slate-700/80 transform scale-95 group-hover:scale-100 origin-top-left space-y-2">
-                <!-- Seta do Tooltip -->
-                <div class="absolute -top-1 left-4 w-2.5 h-2.5 bg-slate-900 border-t border-l border-slate-700/80 rotate-45"></div>
-
-                <!-- Cabeçalho do Tooltip -->
-                <div class="flex items-center justify-between border-b border-slate-700/80 pb-1.5">
-                    <div class="flex items-center gap-1.5 font-bold text-white text-[11px] truncate">
-                        <i class="fa-solid fa-box-archive text-[#00c5de]"></i>
-                        <span class="font-mono">${prot}</span>
-                    </div>
-                    <span class="text-[9.5px] font-bold px-2 py-0.5 rounded-full ${statusObj.badgeClass || 'bg-amber-100 text-amber-800'}">
-                        ${statusObj.label || 'Pendente'}
-                    </span>
-                </div>
-
-                <!-- Dados da Solicitação -->
-                <div class="space-y-1 text-[11px] text-slate-300">
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-[10px] uppercase font-semibold">Solicitante:</span>
-                        <strong class="text-white font-medium truncate max-w-[170px]" title="${solicitanteNome}">${solicitanteNome}</strong>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-[10px] uppercase font-semibold">Cód. Protheus:</span>
-                        <span class="font-mono text-[#00c5de] font-bold">${protheus}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-[10px] uppercase font-semibold">Ativos / Volumes:</span>
-                        <span class="text-white font-medium">${totalAtivos} item(ns) em ${caixas} cx (${totalNFe} NF${totalNFe > 1 ? 's' : ''})</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-[10px] uppercase font-semibold">Logística:</span>
-                        <span class="text-slate-200 truncate max-w-[170px] font-medium" title="${logisticaTexto}">${logisticaTexto}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-[10px] uppercase font-semibold">Data:</span>
-                        <span class="text-slate-300">${dataFmt}</span>
-                    </div>
-                </div>
-
-                ${itensPreview ? `
-                    <div class="pt-1.5 border-t border-slate-700/80 space-y-1">
-                        <span class="text-[9.5px] text-slate-400 uppercase font-bold tracking-wider block">Itens da Devolução:</span>
-                        ${itensPreview}
-                        ${maisItens}
-                    </div>
-                ` : ''}
-
-                <!-- Rodapé com Dica de Ação -->
-                <div class="pt-1.5 border-t border-slate-700/80 flex items-center justify-between text-[10px] text-slate-400">
-                    <span class="flex items-center gap-1 text-[#00c5de] font-semibold">
-                        <i class="fa-solid fa-arrow-pointer text-[9px]"></i> Clique para ver detalhes
-                    </span>
-                    <span class="font-mono text-slate-500 text-[9px]">Makita Devoluções</span>
-                </div>
-            </div>
-        </div>
-    `;
+function _renderIdTooltip(sol) {
+    const prot = sol.protocolo || sol.id || "S/ PROTOCOLO";
+    return `<span class="font-mono font-bold text-slate-800 text-xs tracking-tight">${prot}</span>`;
 }
 
+
 export async function renderHistorico() {
-    const listContainer = document.getElementById("historico-lista");
+    const listContainer = document.getElementById("historico-lista") || document.getElementById("historico-list-container");
     if (!listContainer) return;
 
     listContainer.innerHTML = `
@@ -1519,9 +1417,9 @@ export async function renderHistorico() {
 
         return `
             <tr class="hover:bg-slate-50/80 transition-colors">
-                <!-- 1. ID / Protocolo com Tooltip Rico -->
+                <!-- 1. ID / Protocolo -->
                 <td class="whitespace-nowrap">
-                    ${_renderIdTooltip(sol, key)}
+                    ${_renderIdTooltip(sol)}
                 </td>
 
                 <!-- 2. Data Registro -->
@@ -1703,9 +1601,9 @@ function _filtrarERenderizarAdmGeral() {
 
             return `
                 <tr class="hover:bg-slate-50/80 transition-colors">
-                    <!-- 1. ID / Protocolo com Tooltip Rico -->
+                    <!-- 1. ID / Protocolo -->
                     <td class="whitespace-nowrap">
-                        ${_renderIdTooltip(sol, key)}
+                        ${_renderIdTooltip(sol)}
                     </td>
 
                     <!-- 2. Data Registro -->
@@ -2518,7 +2416,8 @@ function _buscarSolicitacaoPorId(idOuProt) {
     let found = _solicitacoesMap.get(rawId) ||
                 _solicitacoesMap.get(cleanId) ||
                 _solicitacoesMap.get(cleanNum) ||
-                _solicitacoesMap.get(`#${cleanNum}`);
+                _solicitacoesMap.get(`#${cleanNum}`) ||
+                _solicitacoesMap.get(`sol_${cleanId}`);
 
     if (found) return found;
 
@@ -2531,14 +2430,16 @@ function _buscarSolicitacaoPorId(idOuProt) {
     
     found = todasListas.find(s => {
         if (!s) return false;
-        const sid = String(s.id || "").trim().toLowerCase();
-        const sprot = String(s.protocolo || "").trim().toLowerCase();
-        const sprotNum = sprot.replace(/^#/, "");
+        const sid = String(s.id || "").trim();
+        const sidLower = sid.toLowerCase();
+        const sprot = String(s.protocolo || "").trim();
+        const sprotLower = sprot.toLowerCase();
+        const sprotNum = sprotLower.replace(/^#/, "");
 
-        return (sid && sid === cleanId) || 
-               (sprot && sprot === cleanId) || 
+        return (sid && (sid === rawId || sidLower === cleanId)) || 
+               (sprot && (sprot === rawId || sprotLower === cleanId)) || 
                (cleanNum && sprotNum === cleanNum) ||
-               (cleanId && (sid.includes(cleanId) || sprot.includes(cleanId)));
+               (cleanId && (sidLower.includes(cleanId) || sprotLower.includes(cleanId)));
     });
 
     if (found) {
@@ -2551,11 +2452,13 @@ function _buscarSolicitacaoPorId(idOuProt) {
         const locais = JSON.parse(localStorage.getItem("makita_devolucoes_locais") || "[]");
         found = locais.find(s => {
             if (!s) return false;
-            const sid = String(s.id || "").trim().toLowerCase();
-            const sprot = String(s.protocolo || "").trim().toLowerCase();
-            const sprotNum = sprot.replace(/^#/, "");
-            return (sid && sid === cleanId) || 
-                   (sprot && sprot === cleanId) || 
+            const sid = String(s.id || "").trim();
+            const sidLower = sid.toLowerCase();
+            const sprot = String(s.protocolo || "").trim();
+            const sprotLower = sprot.toLowerCase();
+            const sprotNum = sprotLower.replace(/^#/, "");
+            return (sid && (sid === rawId || sidLower === cleanId)) || 
+                   (sprot && (sprot === rawId || sprotLower === cleanId)) || 
                    (cleanNum && sprotNum === cleanNum);
         });
         if (found) {
