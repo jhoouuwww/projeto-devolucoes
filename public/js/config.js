@@ -9,6 +9,16 @@ export const FIREBASE_CONFIG = {
     storageBucket: "makita-devolucoes.appspot.com"
 };
 
+// Configuração do Projeto Estoque (Catálogo Consolidado e Status Comercial de Produtos)
+export const FIREBASE_CONFIG_ESTOQUE = {
+    apiKey: "AIzaSyApyb-qRDYoXanHlRvLFfntq3vjUChtCv0",
+    authDomain: "makita-projeto-estoque-21bb9.firebaseapp.com",
+    projectId: "makita-projeto-estoque-21bb9",
+    storageBucket: "makita-projeto-estoque-21bb9.firebasestorage.app",
+    messagingSenderId: "975796816223",
+    appId: "1:975796816223:web:c3b2079cf5a2f906c08eea"
+};
+
 // URL do Google Apps Script Web App (Desativado em favor da sincronização direta via Firestore)
 export const GOOGLE_APPS_SCRIPT_URL = "";
 

@@ -51,6 +51,12 @@ import {
 import { db, doc, getDoc, collection, query, where, getDocs } from "./firebase.js";
 import { BRASPRESS_FILIAIS, buscarFilialBraspressPorCEP } from "./braspress.js";
 import { FILIAIS_MAKITA } from "./filiais_makita.js";
+import { 
+    atualizarBotaoAuditoriaEtapa1, 
+    abrirModalAuditoriaNaoComerciais, 
+    fecharModalAuditoriaNaoComerciais, 
+    aplicarSelecaoAuditoriaNaDevolucao 
+} from "./estoque_auditoria.js";
 
 // Helper de Toast Padronizado Makita
 export function showToast(mensagem, tipo = "info") {
@@ -707,6 +713,7 @@ function _renderNFeTable() {
 
     _updateNFeSelectionUI();
     renderMiniRelatorioAtivos();
+    atualizarBotaoAuditoriaEtapa1();
 }
 
 function _updateNFeSelectionUI() {
@@ -3296,6 +3303,9 @@ async function bootApp() {
     window.cancelarAutoRedirecionamento = cancelarAutoRedirecionamento;
     window.renderFluxoDevolucao = renderFluxoDevolucao;
     window.renderMiniRelatorioAtivos = renderMiniRelatorioAtivos;
+    window.abrirModalAuditoriaNaoComerciais = abrirModalAuditoriaNaoComerciais;
+    window.fecharModalAuditoriaNaoComerciais = fecharModalAuditoriaNaoComerciais;
+    window.aplicarSelecaoAuditoriaNaDevolucao = aplicarSelecaoAuditoriaNaDevolucao;
     initEventListeners();
     subscribeAuth(updateAuthUI);
     await inicializarAuth();
