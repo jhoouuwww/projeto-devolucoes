@@ -343,6 +343,7 @@ export async function atualizarSolicitacaoNoFirestore(id, payload) {
             filial: payload.solicitante.filial || "01 - Matriz",
             cargo: payload.solicitante.cargo || "Promotor Técnico"
         },
+        editadoPor: payload.editadoPor || null,
         itens: payload.itens.map(it => ({
             id: it.id || `${it.notaFiscal}_${it.codigoItem}`,
             codigoItem: it.codigoItem || it.produto || "",

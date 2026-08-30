@@ -493,7 +493,8 @@ function renderFluxoDevolucao() {
     if (bannerEdicao) {
         if (DevolucaoState.idEmEdicao) {
             bannerEdicao.classList.remove("hidden");
-            if (lblProtocolo) lblProtocolo.textContent = DevolucaoState.protocoloEmEdicao || "#00000";
+            const nomeSol = DevolucaoState.solicitanteEmEdicao?.nome ? ` (Solicitante: ${DevolucaoState.solicitanteEmEdicao.nome})` : "";
+            if (lblProtocolo) lblProtocolo.textContent = `${DevolucaoState.protocoloEmEdicao || "#00000"}${nomeSol}`;
         } else {
             bannerEdicao.classList.add("hidden");
         }
@@ -1182,7 +1183,9 @@ function atualizarCardResumoFilialMakita(branch) {
  * ETAPA 4: Renderização de Resumo e Conferência
  */
 function renderEtapa4Resumo() {
-    const p = AuthState.profile;
+    const p = (DevolucaoState.idEmEdicao && DevolucaoState.solicitanteEmEdicao)
+        ? DevolucaoState.solicitanteEmEdicao
+        : AuthState.profile;
     const elNome = document.getElementById("resumo-solicitante-nome");
     if (elNome) elNome.textContent = p?.nome || "";
     const elEmail = document.getElementById("resumo-solicitante-email");

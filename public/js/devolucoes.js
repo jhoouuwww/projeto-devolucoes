@@ -12,6 +12,7 @@ export const DevolucaoState = {
     filtroTexto: "",
     idEmEdicao: null, // ID do documento caso esteja editando
     protocoloEmEdicao: null, // Protocolo original caso esteja editando
+    solicitanteEmEdicao: null, // Dados do solicitante original para preservar quando ADM edita
     volumes: {
         quantidadeCaixas: 1,
         pesoAproximadoKg: "",
@@ -95,11 +96,33 @@ export async function carregarItensDoUsuario() {
 export async function carregarSolicitacaoParaEdicao(sol) {
     DevolucaoState.idEmEdicao = sol.id || sol.protocolo;
     DevolucaoState.protocoloEmEdicao = sol.protocolo;
+    DevolucaoState.solicitanteEmEdicao = sol.solicitante ? {
+        email: sol.solicitante.email || "",
+        nome: sol.solicitante.nome || "",
+        protheus: sol.solicitante.protheus || "",
+        filial: sol.solicitante.filial || "01 - Matriz",
+        cargo: sol.solicitante.cargo || "Promotor Técnico"
+    } : null;
     DevolucaoState.etapaAtual = 1;
     DevolucaoState.solicitacaoConcluida = null;
 
-    // 1. Carrega os itens do usuário no Firestore primeiro
-    await carregarItensDoUsuario();
+    // 1. Carrega os itens do solicitante original no Firestore (preservando o protheus do solicitante)
+    const protheusAlvo = sol.solicitante?.protheus || AuthState.profile?.protheus;
+    const emailAlvo = sol.solicitante?.email || AuthState.profile?.email;
+    if (protheusAlvo) {
+        DevolucaoState.carregando = true;
+        try {
+            const itens = await buscarAtivosPorProtheus(protheusAlvo, emailAlvo);
+            DevolucaoState.itensDisponiveis = itens || [];
+        } catch (err) {
+            console.error("Erro ao carregar itens do solicitante:", err);
+            DevolucaoState.itensDisponiveis = [];
+        } finally {
+            DevolucaoState.carregando = false;
+        }
+    } else {
+        DevolucaoState.itensDisponiveis = [];
+    }
 
     // 2. Popula itensSelecionados e garante presença na lista disponível
     DevolucaoState.itensSelecionados.clear();
@@ -316,14 +339,25 @@ export async function confirmarEGravarSolicitacao() {
         throw new Error("Nenhum item selecionado.");
     }
 
-    const payload = {
-        solicitante: {
+    // Preserva os dados do solicitante original caso seja uma edição (ex: ADM editando solicitação de um promotor)
+    const solicitanteFinal = (DevolucaoState.idEmEdicao && DevolucaoState.solicitanteEmEdicao)
+        ? {
+            email: DevolucaoState.solicitanteEmEdicao.email,
+            nome: DevolucaoState.solicitanteEmEdicao.nome,
+            protheus: DevolucaoState.solicitanteEmEdicao.protheus,
+            filial: DevolucaoState.solicitanteEmEdicao.filial || "01 - Matriz",
+            cargo: DevolucaoState.solicitanteEmEdicao.cargo || "Promotor Técnico"
+          }
+        : {
             email: AuthState.profile.email,
             nome: AuthState.profile.nome,
             protheus: AuthState.profile.protheus,
             filial: AuthState.profile.filial,
             cargo: AuthState.profile.cargo
-        },
+          };
+
+    const payload = {
+        solicitante: solicitanteFinal,
         itens: Array.from(DevolucaoState.itensSelecionados.values()),
         volumes: {
             quantidadeCaixas: Number(DevolucaoState.volumes.quantidadeCaixas),
@@ -345,7 +379,13 @@ export async function confirmarEGravarSolicitacao() {
                 ? (DevolucaoState.logistica.transportadoraRegional?.uf || "") 
                 : (DevolucaoState.logistica.braspressRetira?.uf || "")
         },
-        observacoesGerais: DevolucaoState.observacoesGerais || ""
+        observacoesGerais: DevolucaoState.observacoesGerais || "",
+        editadoPor: AuthState.profile ? {
+            email: AuthState.profile.email,
+            nome: AuthState.profile.nome,
+            isAdmin: !!AuthState.profile.isAdmin,
+            data: new Date().toISOString()
+        } : null
     };
 
     let resultado;
@@ -369,6 +409,7 @@ export function reiniciarFluxoDevolucao() {
     DevolucaoState.etapaAtual = 1;
     DevolucaoState.idEmEdicao = null;
     DevolucaoState.protocoloEmEdicao = null;
+    DevolucaoState.solicitanteEmEdicao = null;
     DevolucaoState.itensSelecionados.clear();
     DevolucaoState.volumes = {
         quantidadeCaixas: 1,
