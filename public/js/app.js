@@ -52,7 +52,6 @@ import { db, doc, getDoc, collection, query, where, getDocs } from "./firebase.j
 import { BRASPRESS_FILIAIS, buscarFilialBraspressPorCEP } from "./braspress.js";
 import { FILIAIS_MAKITA } from "./filiais_makita.js";
 import { 
-    atualizarBotaoAuditoriaEtapa1, 
     abrirModalAuditoriaNaoComerciais, 
     fecharModalAuditoriaNaoComerciais, 
     aplicarSelecaoAuditoriaNaDevolucao 
@@ -104,7 +103,7 @@ let _modalDetalhesCurrentSol = null;
 // Navegação de Abas Principais (Nova Devolução vs Histórico vs Admin)
 let currentTab = "devolucao"; // 'devolucao', 'historico', 'admin', 'adm-geral'
 
-function setTab(tab) {
+export function setTab(tab) {
     currentTab = tab;
     
     // Atualiza botões do header com as cores e estilo padrão dos projetos Makita

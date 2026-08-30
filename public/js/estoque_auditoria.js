@@ -441,8 +441,12 @@ export async function aplicarSelecaoAuditoriaNaDevolucao() {
     showToast(`${adicionados} item(ns) não-comerciais selecionados para devolução de ${promotorInfo?.nome || 'promotor'}!`, "success");
 }
 
+// Stub seguro para compatibilidade
+export function atualizarBotaoAuditoriaEtapa1() {}
+
 // Window global binds
 window.abrirModalAuditoriaNaoComerciais = abrirModalAuditoriaNaoComerciais;
 window.fecharModalAuditoriaNaoComerciais = fecharModalAuditoriaNaoComerciais;
 window.trocarPromotorAuditoria = trocarPromotorAuditoria;
 window.aplicarSelecaoAuditoriaNaDevolucao = aplicarSelecaoAuditoriaNaDevolucao;
+window.atualizarBotaoAuditoriaEtapa1 = atualizarBotaoAuditoriaEtapa1;
