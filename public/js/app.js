@@ -1263,7 +1263,56 @@ function renderEtapa4Resumo() {
 
 let _modalSucessoTimer = null;
 
-export function fecharModalSucesso() {
+/**
+ * Limpa completamente o estado da devolução e todos os inputs do formulário
+ */
+export function limparFormulariosEInputsDevolucao() {
+    reiniciarFluxoDevolucao();
+    _nfeListenersAttached = false;
+    _nfeSearchTerm = "";
+    _nfeFilterField = "todos";
+
+    // 1. Limpa campos de volumes (Etapa 2)
+    const elQtdVol = document.getElementById("input-qtd-volumes");
+    if (elQtdVol) elQtdVol.value = "1";
+    const elPesoVol = document.getElementById("input-peso-volumes");
+    if (elPesoVol) elPesoVol.value = "";
+    const elObsVol = document.getElementById("input-obs-volumes");
+    if (elObsVol) elObsVol.value = "";
+
+    // 2. Limpa campos de coleta Braspress Retira (Etapa 3)
+    const idsColeta = [
+        "input-retira-cep", "input-retira-rua", "input-retira-numero",
+        "input-retira-complemento", "input-retira-bairro", "input-retira-cidade",
+        "input-retira-uf", "input-retira-referencia", "input-retira-telefone"
+    ];
+    idsColeta.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    // 3. Limpa campos de transportadora regional (Etapa 3)
+    const idsRegional = [
+        "input-reg-cnpj", "input-reg-nome", "input-reg-fantasia", "input-reg-tel",
+        "input-reg-endereco", "input-reg-cidade", "input-reg-uf", "input-reg-contato", "input-reg-motivo"
+    ];
+    idsRegional.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    // 4. Limpa busca de CEP Braspress, filial customizada e observações gerais
+    const elCepBras = document.getElementById("input-cep-braspress");
+    if (elCepBras) elCepBras.value = "";
+    const elOutraFilial = document.getElementById("input-filial-braspress-outra");
+    if (elOutraFilial) elOutraFilial.value = "";
+    const elObsGerais = document.getElementById("input-obs-gerais-etapa3");
+    if (elObsGerais) elObsGerais.value = "";
+    const elSearchNfe = document.getElementById("input-nfe-search");
+    if (elSearchNfe) elSearchNfe.value = "";
+}
+
+export function fecharModalSucesso(irParaNovaDevolucao = false) {
     if (_modalSucessoTimer) {
         clearTimeout(_modalSucessoTimer);
         _modalSucessoTimer = null;
@@ -1271,18 +1320,25 @@ export function fecharModalSucesso() {
     const modal = document.getElementById("modal-sucesso-devolucao");
     if (modal && !modal.classList.contains("hidden")) {
         modal.classList.add("hidden");
-        _nfeListenersAttached = false;
-        _nfeSearchTerm = "";
-        _nfeFilterField = "todos";
-        reiniciarFluxoDevolucao();
+        limparFormulariosEInputsDevolucao();
+        
         const isAdmin = Boolean(AuthState.profile?.isAdmin || ADMIN_EMAILS.includes(AuthState.profile?.email));
         if (isAdmin) {
             setTab("adm-geral");
             renderAdmGeralScreen();
-        } else {
+        } else if (irParaNovaDevolucao === true) {
+            // Clicou no botão "Nova Solicitação"
+            setTab("devolucao");
             carregarItensDoUsuario().then(() => {
                 renderFluxoDevolucao();
                 renderMiniRelatorioAtivos();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        } else {
+            // Fechou no "X" ou tempo esgotou (10s): Redireciona para Minhas Devoluções (Histórico)
+            setTab("historico");
+            carregarHistorico().then(() => {
+                renderHistorico();
                 window.scrollTo({ top: 0, behavior: "smooth" });
             });
         }
@@ -2100,8 +2156,8 @@ function initEventListeners() {
     });
 
     // 7. Botão Nova Devolução e Botão X de fechar dentro do Modal de Sucesso
-    document.getElementById("btn-modal-nova-devolucao")?.addEventListener("click", fecharModalSucesso);
-    document.getElementById("btn-fechar-modal-sucesso-x")?.addEventListener("click", fecharModalSucesso);
+    document.getElementById("btn-modal-nova-devolucao")?.addEventListener("click", () => fecharModalSucesso(true));
+    document.getElementById("btn-fechar-modal-sucesso-x")?.addEventListener("click", () => fecharModalSucesso(false));
 
     // 8.1. Busca por CEP para encontrar a Filial Braspress mais próxima
     const btnBuscarCep = document.getElementById("btn-buscar-cep-braspress");
@@ -3195,6 +3251,7 @@ export function initDeviceAdaptations() {
 async function bootApp() {
     initDeviceAdaptations();
     window.handleMsLogin = handleMsLogin;
+    window.fecharModalSucesso = fecharModalSucesso;
     initEventListeners();
     subscribeAuth(updateAuthUI);
     await inicializarAuth();
