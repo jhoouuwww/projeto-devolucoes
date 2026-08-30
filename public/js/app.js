@@ -135,8 +135,12 @@ function setTab(tab) {
     }
 
     if (tab === "devolucao") {
-        renderFluxoDevolucao();
-        renderMiniRelatorioAtivos();
+        if (!DevolucaoState.itensDisponiveis || DevolucaoState.itensDisponiveis.length === 0) {
+            carregarItensDoUsuario();
+        } else {
+            renderFluxoDevolucao();
+            renderMiniRelatorioAtivos();
+        }
     } else if (tab === "historico") {
         renderHistorico();
     } else if (tab === "adm-geral" || tab === "admin") {
@@ -3290,6 +3294,8 @@ async function bootApp() {
     window.handleMsLogin = handleMsLogin;
     window.fecharModalSucesso = fecharModalSucesso;
     window.cancelarAutoRedirecionamento = cancelarAutoRedirecionamento;
+    window.renderFluxoDevolucao = renderFluxoDevolucao;
+    window.renderMiniRelatorioAtivos = renderMiniRelatorioAtivos;
     initEventListeners();
     subscribeAuth(updateAuthUI);
     await inicializarAuth();

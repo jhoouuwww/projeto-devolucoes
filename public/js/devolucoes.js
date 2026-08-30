@@ -72,21 +72,33 @@ export const DevolucaoState = {
  * Inicializa e carrega os itens do colaborador logado
  */
 export async function carregarItensDoUsuario() {
-    if (!AuthState.profile || !AuthState.profile.protheus) return;
+    if (!AuthState.profile || !AuthState.profile.protheus) return [];
 
     DevolucaoState.carregando = true;
     DevolucaoState.itensSelecionados.clear();
     DevolucaoState.etapaAtual = 1;
     DevolucaoState.solicitacaoConcluida = null;
 
+    if (typeof window !== "undefined" && typeof window.renderFluxoDevolucao === "function") {
+        window.renderFluxoDevolucao();
+    }
+
     try {
         const itens = await buscarAtivosPorProtheus(AuthState.profile.protheus, AuthState.profile.email);
         DevolucaoState.itensDisponiveis = itens || [];
+        return DevolucaoState.itensDisponiveis;
     } catch (err) {
         console.error("Erro ao carregar itens:", err);
         DevolucaoState.itensDisponiveis = [];
+        return [];
     } finally {
         DevolucaoState.carregando = false;
+        if (typeof window !== "undefined" && typeof window.renderFluxoDevolucao === "function") {
+            window.renderFluxoDevolucao();
+            if (typeof window.renderMiniRelatorioAtivos === "function") {
+                window.renderMiniRelatorioAtivos();
+            }
+        }
     }
 }
 
