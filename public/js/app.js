@@ -134,7 +134,10 @@ function setTab(tab) {
         viewAdmGeral.style.display = tab === "adm-geral" ? "block" : "none";
     }
 
-    if (tab === "historico") {
+    if (tab === "devolucao") {
+        renderFluxoDevolucao();
+        renderMiniRelatorioAtivos();
+    } else if (tab === "historico") {
         renderHistorico();
     } else if (tab === "adm-geral" || tab === "admin") {
         renderAdmGeralScreen();
@@ -1310,6 +1313,10 @@ export function limparFormulariosEInputsDevolucao() {
     if (elObsGerais) elObsGerais.value = "";
     const elSearchNfe = document.getElementById("input-nfe-search");
     if (elSearchNfe) elSearchNfe.value = "";
+
+    // 5. Atualiza imediatamente o DOM para a Etapa 1 (Itens/Ativos)
+    renderFluxoDevolucao();
+    renderMiniRelatorioAtivos();
 }
 
 let _autoRedirectTimer = null;
@@ -1329,9 +1336,10 @@ export function fecharModalSucesso(irParaNovaDevolucao = false) {
     cancelarAutoRedirecionamento();
 
     const modal = document.getElementById("modal-sucesso-devolucao");
-    if (modal && !modal.classList.contains("hidden")) {
+    if (modal) {
         modal.classList.add("hidden");
-        limparFormulariosEInputsDevolucao();
+    }
+    limparFormulariosEInputsDevolucao();
         
         const isAdmin = Boolean(AuthState.profile?.isAdmin || ADMIN_EMAILS.includes(AuthState.profile?.email));
         if (isAdmin) {
@@ -1369,7 +1377,6 @@ export function fecharModalSucesso(irParaNovaDevolucao = false) {
                 _autoRedirectTimer = null;
             }, 6000);
         }
-    }
 }
 
 /**
