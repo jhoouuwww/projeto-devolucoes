@@ -1312,11 +1312,22 @@ export function limparFormulariosEInputsDevolucao() {
     if (elSearchNfe) elSearchNfe.value = "";
 }
 
+let _autoRedirectTimer = null;
+
+export function cancelarAutoRedirecionamento() {
+    if (_autoRedirectTimer) {
+        clearTimeout(_autoRedirectTimer);
+        _autoRedirectTimer = null;
+    }
+}
+
 export function fecharModalSucesso(irParaNovaDevolucao = false) {
     if (_modalSucessoTimer) {
         clearTimeout(_modalSucessoTimer);
         _modalSucessoTimer = null;
     }
+    cancelarAutoRedirecionamento();
+
     const modal = document.getElementById("modal-sucesso-devolucao");
     if (modal && !modal.classList.contains("hidden")) {
         modal.classList.add("hidden");
@@ -1327,7 +1338,7 @@ export function fecharModalSucesso(irParaNovaDevolucao = false) {
             setTab("adm-geral");
             renderAdmGeralScreen();
         } else if (irParaNovaDevolucao === true) {
-            // Clicou no botão "Nova Solicitação"
+            // Clicou no botão "Nova Solicitação" -> Direciona imediatamente para Etapa 1
             setTab("devolucao");
             carregarItensDoUsuario().then(() => {
                 renderFluxoDevolucao();
@@ -1335,12 +1346,28 @@ export function fecharModalSucesso(irParaNovaDevolucao = false) {
                 window.scrollTo({ top: 0, behavior: "smooth" });
             });
         } else {
-            // Fechou no "X" ou tempo esgotou (10s): Redireciona para Minhas Devoluções (Histórico)
+            // Fechou no "X" ou tempo esgotou (10s): Redireciona para Minhas Devoluções por 6 segundos e retorna para Ativos / Itens
             setTab("historico");
             carregarHistorico().then(() => {
                 renderHistorico();
                 window.scrollTo({ top: 0, behavior: "smooth" });
             });
+
+            showToast("Visualizando em Minhas Devoluções. Retornando para Ativos em 6s...", "info");
+
+            _autoRedirectTimer = setTimeout(() => {
+                // Se o usuário ainda estiver na aba de histórico e não tiver navegado manualmente
+                if (currentTab === "historico") {
+                    setTab("devolucao");
+                    carregarItensDoUsuario().then(() => {
+                        renderFluxoDevolucao();
+                        renderMiniRelatorioAtivos();
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        showToast("Pronto para uma nova solicitação de devolução.", "info");
+                    });
+                }
+                _autoRedirectTimer = null;
+            }, 6000);
         }
     }
 }
@@ -2030,7 +2057,10 @@ function initEventListeners() {
 
     // 2. Abas de Navegação
     document.querySelectorAll(".nav-tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => setTab(btn.dataset.tab));
+        btn.addEventListener("click", () => {
+            cancelarAutoRedirecionamento();
+            setTab(btn.dataset.tab);
+        });
     });
 
     // 3. Busca de itens na Etapa 1
@@ -3252,6 +3282,7 @@ async function bootApp() {
     initDeviceAdaptations();
     window.handleMsLogin = handleMsLogin;
     window.fecharModalSucesso = fecharModalSucesso;
+    window.cancelarAutoRedirecionamento = cancelarAutoRedirecionamento;
     initEventListeners();
     subscribeAuth(updateAuthUI);
     await inicializarAuth();
