@@ -1923,10 +1923,14 @@ export function exportarSolicitacoesParaExcel() {
     showToast("Planilha Excel gerada e baixada com sucesso!", "success");
 }
 
+let _isLoggingIn = false;
+
 /**
  * Fluxo de Login Microsoft / Corporativo
  */
 export async function handleMsLogin() {
+    if (_isLoggingIn) return;
+
     const inputEl      = document.getElementById("login-email") || document.getElementById("login-email-ms");
     const btnEl        = document.getElementById("btn-seguinte") || document.getElementById("btn-login-ms");
     const loginErrorEl = document.getElementById("login-error");
@@ -1934,6 +1938,7 @@ export async function handleMsLogin() {
 
     function showLoginErr(msg) {
         console.warn("[Makita Login] Erro na validação:", msg);
+        _isLoggingIn = false;
         if (btnEl) {
             btnEl.disabled = false;
             btnEl.innerHTML = "Seguinte";
@@ -1969,60 +1974,49 @@ export async function handleMsLogin() {
         }
     }
 
-    const emailInput = (inputEl?.value || "").trim().toLowerCase();
-    console.log("[Makita Login] Clique / Enter detectado no login. Termo digitado:", emailInput);
+    let rawInput = (inputEl?.value || "").trim().toLowerCase();
+    console.log("[Makita Login] Tentativa de login iniciada. Entrada:", rawInput);
     clearLoginErr();
 
     // 1. Validação de campo vazio
-    if (!emailInput) {
-        showLoginErr("Insira o seu endereço de e-mail corporativo completo.");
+    if (!rawInput) {
+        showLoginErr("Insira o seu endereço de e-mail corporativo ou usuário.");
         inputEl?.focus();
         return;
     }
 
-    // 2. Validação de formato (deve conter @)
-    if (!emailInput.includes("@")) {
-        showLoginErr("Insira o endereço de e-mail corporativo completo (exemplo: usuario@makita.com.br).");
-        inputEl?.focus();
-        return;
-    }
-
-    // 3. Validação estrita de domínio corporativo (@makita.com.br / @makitabr.onmicrosoft.com)
-    const isDomainMakita = emailInput.endsWith("@makita.com.br") || emailInput.endsWith("@makitabr.onmicrosoft.com");
-    if (!isDomainMakita) {
-        showLoginErr("Acesso não permitido: Apenas contas corporativas (@makita.com.br) são autorizadas.");
-        inputEl?.focus();
-        return;
-    }
-
+    _isLoggingIn = true;
     setBtnLoading(true);
 
     try {
-        console.log("[Makita Login] Buscando vínculo Protheus para:", emailInput);
-        const vinculo = await buscarVinculoProtheus(emailInput);
+        console.log("[Makita Login] Buscando vínculo Protheus para:", rawInput);
+        const vinculo = await buscarVinculoProtheus(rawInput);
         console.log("[Makita Login] Resultado do vínculo:", vinculo);
 
-        if (!vinculo) {
+        if (!vinculo || !vinculo.protheus) {
             setBtnLoading(false);
-            showLoginErr(`O e-mail "${emailInput}" não foi encontrado na base autorizada de promotores da Makita.`);
+            _isLoggingIn = false;
+            showLoginErr(`O usuário "${rawInput}" não foi encontrado na base autorizada de promotores da Makita.`);
             return;
         }
 
-        console.log("[Makita Login] Realizando login para:", vinculo.email || emailInput);
-        await simularLogin(vinculo.email || emailInput);
+        console.log("[Makita Login] Realizando login para:", vinculo.email || rawInput);
+        await simularLogin(vinculo.email || rawInput);
         console.log("[Makita Login] Login simulado concluído com sucesso!");
 
     } catch (err) {
         console.error("[Makita Login] Erro inesperado ao verificar acesso:", err);
         setBtnLoading(false);
+        _isLoggingIn = false;
         showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
     } finally {
         setTimeout(() => {
+            _isLoggingIn = false;
             if (!AuthState.user && btnEl) {
                 btnEl.disabled = false;
                 btnEl.innerHTML = "Seguinte";
             }
-        }, 3500);
+        }, 1500);
     }
 }
 
@@ -2049,20 +2043,6 @@ function initEventListeners() {
 
     inputLogin?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-            e.preventDefault();
-            handleMsLogin();
-        }
-    });
-
-    document.addEventListener("click", (e) => {
-        if (e.target && (e.target.id === "btn-seguinte" || e.target.closest("#btn-seguinte, #btn-login-ms"))) {
-            e.preventDefault();
-            handleMsLogin();
-        }
-    });
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && (e.target.id === "login-email" || e.target.id === "login-email-ms")) {
             e.preventDefault();
             handleMsLogin();
         }

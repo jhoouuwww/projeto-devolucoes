@@ -50,14 +50,43 @@ let _simSessionActive = false;
  */
 export async function buscarVinculoProtheus(inputStr) {
     if (!inputStr) return null;
-    const email = inputStr.toLowerCase().trim();
+    let raw = String(inputStr).toLowerCase().trim();
 
-    // Validação estrita de e-mail completo corporativo
-    if (!email.includes("@")) return null;
-    const isDomainMakita = email.endsWith("@makita.com.br") || email.endsWith("@makitabr.onmicrosoft.com");
-    if (!isDomainMakita) return null;
+    // 1. Normalização de e-mail / usuário / código Protheus
+    let email = raw;
+    if (!email.includes("@")) {
+        if (/^\d+$/.test(email)) {
+            // Se for número (Protheus), busca na base
+            const entryByProtheus = Object.entries(VINCULOS_INICIAIS).find(([em, p]) => String(p.protheus) === email);
+            if (entryByProtheus) {
+                email = entryByProtheus[0];
+            } else if (email === "88901") {
+                email = "j_melgaco@makita.com.br";
+            } else {
+                email = `${email}@makita.com.br`;
+            }
+        } else {
+            email = `${email}@makita.com.br`;
+        }
+    } else if (email.endsWith("@makita")) {
+        email = `${email}.com.br`;
+    }
 
-    // 1. Tenta buscar na Base Local (VINCULOS_INICIAIS) pelo e-mail exato
+    const cleanUser = email.split("@")[0].trim();
+
+    // 2. Admin Jonathan Melgaço
+    if (email === "j_melgaco@makita.com.br" || cleanUser === "j_melgaco" || cleanUser === "88901" || ADMIN_EMAILS.includes(email)) {
+        return {
+            protheus: "88901",
+            nome: "Jonathan Melgaço",
+            filial: "01 - Matriz",
+            cargo: "Coordenador de Trade Marketing",
+            isAdmin: true,
+            email: "j_melgaco@makita.com.br"
+        };
+    }
+
+    // 3. Tenta buscar na Base Local (VINCULOS_INICIAIS)
     if (VINCULOS_INICIAIS[email]) {
         const v = VINCULOS_INICIAIS[email];
         return {
@@ -70,19 +99,21 @@ export async function buscarVinculoProtheus(inputStr) {
         };
     }
 
-    // 2. Admin Jonathan Melgaço
-    if (email === "j_melgaco@makita.com.br" || ADMIN_EMAILS.includes(email)) {
+    // Busca por username no VINCULOS_INICIAIS (ex: "b_espindula")
+    const entryByUsername = Object.entries(VINCULOS_INICIAIS).find(([em]) => em.split("@")[0].toLowerCase() === cleanUser);
+    if (entryByUsername) {
+        const v = entryByUsername[1];
         return {
-            protheus: "88901",
-            nome: "Jonathan Melgaço",
-            filial: "01 - Matriz",
-            cargo: "Administrador / Suporte",
-            isAdmin: true,
-            email: email
+            protheus: v.protheus,
+            nome: v.nome,
+            filial: v.filial || "01 - Matriz",
+            cargo: v.cargo || "Promotor Técnico",
+            isAdmin: ADMIN_EMAILS.includes(entryByUsername[0]) || v.isAdmin === true,
+            email: entryByUsername[0]
         };
     }
 
-    // 3. Busca no Firestore em paralelo pelo e-mail exato
+    // 4. Busca no Firestore em paralelo pelo e-mail exato
     try {
         const firestorePromise = (async () => {
             const checks = [
