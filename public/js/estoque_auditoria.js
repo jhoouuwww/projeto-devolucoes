@@ -4,14 +4,24 @@
  * Consulta o Firestore do projeto 'makita-projeto-estoque' (estoque_local_56 e estoque_local_57)
  * para identificar automaticamente itens em posse do promotor que não são mais comerciais
  * (fora de linha, descontinuados, obsoletos, inativos ou amostras) e sugerir devolução.
+ * 
+ * Exclusivo para gestão do Coordenador Jonathan Melgaço (j_melgaco@makita.com.br).
  */
 
 import { dbEstoque, doc, getDoc } from "./firebase.js";
-import { DevolucaoState, toggleItemSelecao } from "./devolucoes.js";
-import { showToast } from "./app.js";
+import { VINCULOS_INICIAIS } from "./config.js";
+import { AuthState } from "./auth.js";
+import { DevolucaoState, toggleItemSelecao, reiniciarFluxoDevolucao } from "./devolucoes.js";
+import { buscarAtivosPorProtheus } from "./api.js";
+import { showToast, setTab } from "./app.js";
 
 // Cache em memória para evitar consultas duplicadas de SKU
 const _cacheStatusEstoque = new Map();
+
+// Estado da Auditoria
+let _promotorSelecionadoProtheus = null;
+let _itensDisponiveisAuditoria = [];
+let _itensNaoComerciaisAuditoria = [];
 
 // Mapeamento oficial de status do Protheus / Projeto Estoque
 export const STATUS_ESTOQUE_CONFIG = {
@@ -73,7 +83,7 @@ export const STATUS_ESTOQUE_CONFIG = {
         key: 'nao_comercial',
         label: 'Não Comercial',
         ehComercial: false,
-        motivo: 'Ativo sem saldo ou sem cadastro comercial ativo no estoque.',
+        motivo: 'Ativo sem cadastro ou sem saldo no estoque comercial ativo.',
         badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
         icon: 'fa-solid fa-box-archive'
     }
@@ -180,7 +190,7 @@ export async function consultarStatusItemEstoque(codigoProduto) {
 }
 
 /**
- * Analisa a lista completa de ativos do promotor e retorna os não-comerciais
+ * Analisa a lista completa de ativos de um promotor e retorna os não-comerciais
  */
 export async function analisarAtivosPromotor(itensDisponiveis) {
     if (!itensDisponiveis || itensDisponiveis.length === 0) {
@@ -215,58 +225,112 @@ export async function analisarAtivosPromotor(itensDisponiveis) {
 }
 
 /**
- * Atualiza o botão e badge de auditoria na Etapa 1
+ * Popula o select de promotores no modal
  */
-export async function atualizarBotaoAuditoriaEtapa1() {
-    const btn = document.getElementById("btn-auditoria-nao-comerciais");
-    const badge = document.getElementById("badge-count-nao-comerciais");
-    const itens = DevolucaoState.itensDisponiveis || [];
+function popularSelectPromotoresModal(protheusAtivo) {
+    const select = document.getElementById("sel-promotor-auditoria");
+    if (!select) return;
 
-    if (!btn) return;
+    const promotores = Object.entries(VINCULOS_INICIAIS)
+        .filter(([email, p]) => p.protheus && p.protheus !== "88901")
+        .map(([email, p]) => ({ email, ...p }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
 
-    if (itens.length === 0) {
-        btn.classList.add("hidden");
-        btn.classList.remove("inline-flex");
-        return;
-    }
-
-    const analise = await analisarAtivosPromotor(itens);
-    if (analise.totalNaoComerciais > 0) {
-        if (badge) badge.textContent = analise.totalNaoComerciais;
-        btn.classList.remove("hidden");
-        btn.classList.add("inline-flex");
-    } else {
-        btn.classList.add("hidden");
-        btn.classList.remove("inline-flex");
-    }
+    select.innerHTML = promotores.map(p => {
+        const isSelected = String(p.protheus) === String(protheusAtivo);
+        return `<option value="${p.protheus}" data-email="${p.email}" ${isSelected ? "selected" : ""}>${p.nome} (${p.protheus})</option>`;
+    }).join("");
 }
 
 /**
  * Abre o Modal de Auditoria e Sugestão de Devoluções de Itens Não-Comerciais
  */
-export async function abrirModalAuditoriaNaoComerciais() {
+export async function abrirModalAuditoriaNaoComerciais(protheusAlvo = null) {
     const modal = document.getElementById("modal-auditoria-estoque");
     const containerLista = document.getElementById("modal-auditoria-itens-lista");
     const lblCount = document.getElementById("modal-auditoria-count-total");
+    const lblStats = document.getElementById("modal-auditoria-promotor-stats");
     const btnAplicar = document.getElementById("btn-aplicar-selecao-auditoria");
 
     if (!modal) return;
 
-    // Exibe o modal com loading
     modal.classList.remove("hidden");
+
+    // Determina o promotor alvo
+    let protheus = protheusAlvo;
+    if (!protheus) {
+        if (_promotorSelecionadoProtheus) {
+            protheus = _promotorSelecionadoProtheus;
+        } else if (DevolucaoState.solicitanteEmEdicao?.protheus) {
+            protheus = DevolucaoState.solicitanteEmEdicao.protheus;
+        } else {
+            // Pega o primeiro promotor da lista (ex: Bruno Espindula 22371)
+            const primeiro = Object.values(VINCULOS_INICIAIS).find(p => p.protheus && p.protheus !== "88901");
+            protheus = primeiro ? primeiro.protheus : (AuthState.profile?.protheus || "22371");
+        }
+    }
+
+    _promotorSelecionadoProtheus = protheus;
+    popularSelectPromotoresModal(protheus);
+
+    await trocarPromotorAuditoria(protheus);
+}
+
+/**
+ * Troca de promotor no Modal de Auditoria
+ */
+export async function trocarPromotorAuditoria(protheus) {
+    _promotorSelecionadoProtheus = String(protheus);
+
+    const containerLista = document.getElementById("modal-auditoria-itens-lista");
+    const lblCount = document.getElementById("modal-auditoria-count-total");
+    const lblStats = document.getElementById("modal-auditoria-promotor-stats");
+    const btnAplicar = document.getElementById("btn-aplicar-selecao-auditoria");
+
+    // Encontra informações do promotor
+    const promotorEntry = Object.entries(VINCULOS_INICIAIS).find(([email, p]) => String(p.protheus) === _promotorSelecionadoProtheus);
+    const promotorNome = promotorEntry ? promotorEntry[1].nome : `Protheus ${_promotorSelecionadoProtheus}`;
+    const promotorEmail = promotorEntry ? promotorEntry[0] : "";
+
     if (containerLista) {
         containerLista.innerHTML = `
             <div class="py-12 text-center text-slate-500">
                 <i class="fa-solid fa-spinner fa-spin text-2xl text-[#008497] mb-2"></i>
-                <p class="text-xs">Consultando catálogo do projeto-estoque...</p>
+                <p class="text-xs font-semibold text-slate-700">Buscando ativos de ${promotorNome}...</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Cruzando SKUs em tempo real com o Projeto Estoque</p>
             </div>
         `;
     }
+    if (lblStats) lblStats.textContent = "Carregando...";
 
-    const itens = DevolucaoState.itensDisponiveis || [];
+    // 1. Busca ativos do promotor no Firestore
+    const itens = await buscarAtivosPorProtheus(_promotorSelecionadoProtheus, promotorEmail);
+    _itensDisponiveisAuditoria = itens;
+
+    if (!itens || itens.length === 0) {
+        if (lblCount) lblCount.textContent = `0 itens para ${promotorNome}`;
+        if (lblStats) lblStats.textContent = `0 ativos em posse`;
+        if (containerLista) {
+            containerLista.innerHTML = `
+                <div class="py-12 text-center text-slate-500">
+                    <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-xl mb-2">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <strong class="text-xs text-slate-700 block">Nenhum ativo localizado</strong>
+                    <p class="text-[11px] text-slate-400 mt-1">Este promotor não possui Notas Fiscais pendentes com saldo em aberto no Protheus.</p>
+                </div>
+            `;
+        }
+        if (btnAplicar) btnAplicar.classList.add("hidden");
+        return;
+    }
+
+    // 2. Analisa os ativos contra o catálogo do Projeto Estoque
     const analise = await analisarAtivosPromotor(itens);
+    _itensNaoComerciaisAuditoria = analise.itensNaoComerciais;
 
-    if (lblCount) lblCount.textContent = `${analise.totalNaoComerciais} item(ns) identificados`;
+    if (lblCount) lblCount.textContent = `${analise.totalNaoComerciais} item(ns) não-comerciais de ${promotorNome}`;
+    if (lblStats) lblStats.textContent = `${analise.totalItens} ativos avaliados · ${analise.totalNaoComerciais} sugeridos`;
 
     if (analise.totalNaoComerciais === 0) {
         if (containerLista) {
@@ -275,8 +339,8 @@ export async function abrirModalAuditoriaNaoComerciais() {
                     <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl mb-2">
                         <i class="fa-solid fa-check"></i>
                     </div>
-                    <strong class="text-xs text-slate-700 block">Todos os seus ativos são comerciais!</strong>
-                    <p class="text-[11px] text-slate-400 mt-1">Não identificamos nenhum item fora de linha ou descontinuado na sua lista.</p>
+                    <strong class="text-xs text-slate-700 block">100% dos ativos são Comerciais Ativos!</strong>
+                    <p class="text-[11px] text-slate-400 mt-1">Nenhum item fora de linha, descontinuado ou amostra em posse de ${promotorNome}.</p>
                 </div>
             `;
         }
@@ -286,12 +350,12 @@ export async function abrirModalAuditoriaNaoComerciais() {
 
     if (btnAplicar) {
         btnAplicar.classList.remove("hidden");
-        btnAplicar.innerHTML = `<i class="fa-solid fa-check-double mr-1.5"></i> Selecionar ${analise.totalNaoComerciais} item(ns) para Devolução`;
+        btnAplicar.innerHTML = `<i class="fa-solid fa-check-double mr-1.5"></i> Iniciar Devolução (${analise.totalNaoComerciais} itens) para ${promotorNome.split(" ")[0]}`;
     }
 
-    // Renderiza a lista de itens com checkboxes marcados
+    // 3. Renderiza a listagem de itens não-comerciais
     if (containerLista) {
-        containerLista.innerHTML = analise.itensNaoComerciais.map((item, idx) => {
+        containerLista.innerHTML = analise.itensNaoComerciais.map(item => {
             const st = item.auditoriaEstoque || {};
             const cfg = st.config || STATUS_ESTOQUE_CONFIG.nao_comercial;
             const cod = item.codigoItem || item.produto || "—";
@@ -317,8 +381,9 @@ export async function abrirModalAuditoriaNaoComerciais() {
                             <span class="text-[10px] font-bold text-[#008497] ml-auto">Qtd: ${qtd} un</span>
                         </div>
                         <p class="text-xs font-medium text-slate-700 truncate" title="${desc}">${desc}</p>
-                        <p class="text-[11px] text-amber-700 bg-amber-50/80 border border-amber-100 rounded px-2 py-1 leading-snug">
-                            <i class="fa-solid fa-circle-info mr-1 text-[10px]"></i> ${st.motivo || cfg.motivo}
+                        <p class="text-[11px] text-amber-800 bg-amber-50/90 border border-amber-200/80 rounded px-2 py-1 leading-snug flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info text-[10px] text-amber-600 shrink-0"></i>
+                            <span>${st.motivo || cfg.motivo}</span>
                         </p>
                     </div>
                 </div>
@@ -336,14 +401,27 @@ export function fecharModalAuditoriaNaoComerciais() {
 }
 
 /**
- * Aplica a seleção dos itens marcados no modal direto na Etapa 1
+ * Aplica a seleção dos itens marcados no modal e inicia a solicitação de devolução
  */
-export function aplicarSelecaoAuditoriaNaDevolucao() {
+export async function aplicarSelecaoAuditoriaNaDevolucao() {
     const checkboxes = document.querySelectorAll(".chk-item-auditoria:checked");
     if (!checkboxes || checkboxes.length === 0) {
         showToast("Selecione ao menos 1 item para adicionar à devolução.", "warning");
         return;
     }
+
+    // Recupera dados do promotor auditado
+    const promotorEntry = Object.entries(VINCULOS_INICIAIS).find(([email, p]) => String(p.protheus) === _promotorSelecionadoProtheus);
+    const promotorInfo = promotorEntry ? { email: promotorEntry[0], ...promotorEntry[1] } : null;
+
+    reiniciarFluxoDevolucao();
+
+    // Se for o Jonathan criando a devolução para o promotor auditado
+    if (promotorInfo) {
+        DevolucaoState.solicitanteEmEdicao = promotorInfo;
+    }
+
+    DevolucaoState.itensDisponiveis = _itensDisponiveisAuditoria || [];
 
     let adicionados = 0;
     checkboxes.forEach(chk => {
@@ -357,15 +435,14 @@ export function aplicarSelecaoAuditoriaNaDevolucao() {
 
     fecharModalAuditoriaNaoComerciais();
 
-    // Re-renderiza a tabela da Etapa 1
-    if (typeof window.renderFluxoDevolucao === "function") {
-        window.renderFluxoDevolucao();
-    }
+    // Redireciona para a aba de Nova Devolução (Etapa 1) com os itens marcados
+    setTab("devolucao");
 
-    showToast(`${adicionados} item(ns) não-comerciais adicionados à sua devolução com sucesso!`, "success");
+    showToast(`${adicionados} item(ns) não-comerciais selecionados para devolução de ${promotorInfo?.nome || 'promotor'}!`, "success");
 }
 
 // Window global binds
 window.abrirModalAuditoriaNaoComerciais = abrirModalAuditoriaNaoComerciais;
 window.fecharModalAuditoriaNaoComerciais = fecharModalAuditoriaNaoComerciais;
+window.trocarPromotorAuditoria = trocarPromotorAuditoria;
 window.aplicarSelecaoAuditoriaNaDevolucao = aplicarSelecaoAuditoriaNaDevolucao;

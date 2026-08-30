@@ -442,6 +442,13 @@ function updateAuthUI() {
     const containerMiniRelat = document.getElementById("container-mini-relatorio");
     const dashboardHeaderPromotor = document.getElementById("dashboard-header-promotor");
 
+    // Aba Flutuante Lateral: Auditoria de Itens Não-Comerciais (Exclusivo Jonathan Melgaço / Admin)
+    const fabAuditoria = document.getElementById("fab-auditoria-estoque");
+    if (fabAuditoria) {
+        fabAuditoria.classList.toggle("hidden", !isUserAdmin);
+        fabAuditoria.classList.toggle("flex", isUserAdmin);
+    }
+
     if (isUserAdmin) {
         // TELA EXCLUSIVA JONATHAN MELGAÇO: Painel Geral, Cadastrar Promotor e Sair com layout padronizado
         if (headerButtons) {
@@ -713,7 +720,6 @@ function _renderNFeTable() {
 
     _updateNFeSelectionUI();
     renderMiniRelatorioAtivos();
-    atualizarBotaoAuditoriaEtapa1();
 }
 
 function _updateNFeSelectionUI() {

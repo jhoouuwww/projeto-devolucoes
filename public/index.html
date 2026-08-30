@@ -176,7 +176,7 @@
     </header>
 
     <!-- ================================================================= -->
-    <!-- BLOCO DE ABAS FLUTUANTES FIXAS NA LATERAL DIREITA (EXPORTAR EXCEL)-->
+    <!-- BLOCO DE ABAS FLUTUANTES FIXAS NA LATERAL DIREITA (EXPORTAR EXCEL / AUDITORIA ESTOQUE) -->
     <!-- ================================================================= -->
     <div id="floating-side-actions" class="fixed top-44 right-0 z-[45] flex flex-col gap-2.5 items-end">
         <!-- Aba Flutuante: Exportar Excel -->
@@ -188,6 +188,20 @@
             <!-- Tooltip à Esquerda -->
             <div class="absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
                 <span>Exportar Relatório Excel (.xlsx)</span>
+                <div class="absolute -right-1 top-1/2 -translate-y-1/2 border-y-4 border-y-transparent border-l-4 border-l-slate-900"></div>
+            </div>
+        </button>
+
+        <!-- Aba Flutuante: Auditoria de Itens Não-Comerciais (Exclusivo Jonathan Melgaço) -->
+        <button id="fab-auditoria-estoque" 
+                type="button" 
+                onclick="window.abrirModalAuditoriaNaoComerciais()"
+                class="hidden group relative w-12 h-12 bg-white hover:bg-amber-50 text-amber-600 hover:text-amber-700 rounded-l-2xl border-y border-l border-amber-200 shadow-[0_4px_14px_rgba(0,0,0,0.12)] items-center justify-center transition-all duration-200 hover:w-14 cursor-pointer"
+                title="Auditoria de Itens Não-Comerciais (Projeto Estoque)">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+            <!-- Tooltip à Esquerda -->
+            <div class="absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
+                <span>Auditoria de Não-Comerciais (Projeto Estoque)</span>
                 <div class="absolute -right-1 top-1/2 -translate-y-1/2 border-y-4 border-y-transparent border-l-4 border-l-slate-900"></div>
             </div>
         </button>
@@ -342,20 +356,8 @@
                             <p class="text-xs text-slate-400 mt-0.5">Apenas as notas vinculadas ao seu código Protheus são exibidas abaixo.</p>
                         </div>
 
-                        <!-- Contador de selecionados + Botão Auditoria + Botão Avançar no Topo -->
-                        <div class="flex items-center gap-2 shrink-0">
-                            <!-- Botão de Auditoria de Itens Não-Comerciais (Projeto Estoque) -->
-                            <button 
-                                type="button" 
-                                id="btn-auditoria-nao-comerciais" 
-                                onclick="window.abrirModalAuditoriaNaoComerciais()" 
-                                class="hidden items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all cursor-pointer animate-pulse"
-                                title="Itens fora de linha, descontinuados ou amostras detectados no estoque"
-                            >
-                                <i class="fa-solid fa-wand-magic-sparkles text-amber-200"></i>
-                                <span>Não-Comerciais (<strong id="badge-count-nao-comerciais" class="font-mono text-white">0</strong>)</span>
-                            </button>
-
+                        <!-- Contador de selecionados + Botão Avançar no Topo -->
+                        <div class="flex items-center gap-2.5 shrink-0">
                             <div id="nfe-selection-badge" class="hidden sm:flex items-center gap-2 px-3.5 py-2 bg-[#008497]/10 border border-[#008497]/30 rounded-xl text-[#008497] font-bold text-sm">
                                 <i class="fa-solid fa-check-square text-base"></i>
                                 <span id="nfe-selected-count">0</span>
@@ -1689,11 +1691,26 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
             </div>
 
             <!-- Descrição Informativa -->
-            <div class="px-6 py-3.5 bg-amber-50/80 border-b border-amber-200/70 flex items-start gap-3 shrink-0">
+            <div class="px-6 py-3 bg-amber-50/80 border-b border-amber-200/70 flex items-start gap-3 shrink-0">
                 <i class="fa-solid fa-circle-info text-amber-600 text-sm mt-0.5 shrink-0"></i>
                 <p class="text-xs text-amber-950 leading-relaxed">
-                    Identificamos itens em sua lista de ativos que constam no <strong>Projeto Estoque</strong> como <em>fora de linha, descontinuados, obsoletos ou amostras</em>. Recomendamos selecionar estes itens para devolução.
+                    Identificamos itens na lista de ativos do promotor que constam no <strong>Projeto Estoque</strong> como <em>fora de linha, descontinuados, obsoletos ou amostras</em>. Recomendamos selecionar estes itens para devolução.
                 </p>
+            </div>
+
+            <!-- Seletor de Promotor para Auditoria (Exclusivo Jonathan Melgaço / ADM) -->
+            <div id="modal-auditoria-promotor-box" class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <label for="sel-promotor-auditoria" class="text-xs font-bold text-slate-700 whitespace-nowrap">
+                        <i class="fa-solid fa-user-gear text-[#008497] mr-1"></i> Promotor:
+                    </label>
+                    <select id="sel-promotor-auditoria" onchange="window.trocarPromotorAuditoria(this.value)" class="w-full sm:w-80 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-[#008497] outline-none shadow-xs">
+                        <!-- Populado via estoque_auditoria.js -->
+                    </select>
+                </div>
+                <div id="modal-auditoria-promotor-stats" class="text-xs font-bold text-[#008497] shrink-0">
+                    <!-- Ativos avaliados -->
+                </div>
             </div>
 
             <!-- Lista de Itens com Scroll -->
@@ -1724,6 +1741,6 @@ HR2470	MARTELETE ROTATIVO 800W	NF-0020455	PED-891024	1	12345"
     </div>
 
     <!-- Script Principal como Módulo ES6 -->
-    <script type="module" src="./js/app.js?v=20260830_082500"></script>
+    <script type="module" src="./js/app.js?v=20260830_083000"></script>
 </body>
 </html>
