@@ -1934,18 +1934,12 @@ export async function handleMsLogin() {
     const inputEl      = document.getElementById("login-email") || document.getElementById("login-email-ms");
     const btnEl        = document.getElementById("btn-seguinte") || document.getElementById("btn-login-ms");
     const loginErrorEl = document.getElementById("login-error");
-    const loginLoading = document.getElementById("login-loading");
 
     function showLoginErr(msg) {
-        console.warn("[Makita Login] Erro na validação:", msg);
         _isLoggingIn = false;
         if (btnEl) {
             btnEl.disabled = false;
             btnEl.innerHTML = "Seguinte";
-        }
-        if (loginLoading) {
-            loginLoading.classList.add("hidden", "pointer-events-none");
-            loginLoading.style.setProperty("display", "none", "important");
         }
         if (loginErrorEl) {
             loginErrorEl.textContent = msg;
@@ -1974,13 +1968,11 @@ export async function handleMsLogin() {
         }
     }
 
-    let rawInput = (inputEl?.value || "").trim().toLowerCase();
-    console.log("[Makita Login] Tentativa de login iniciada. Entrada:", rawInput);
+    const term = (inputEl?.value || "").trim().toLowerCase();
     clearLoginErr();
 
-    // 1. Validação de campo vazio
-    if (!rawInput) {
-        showLoginErr("Insira o seu endereço de e-mail corporativo ou usuário.");
+    if (!term) {
+        showLoginErr("Insira o seu endereço de e-mail corporativo ou utilizador.");
         inputEl?.focus();
         return;
     }
@@ -1989,23 +1981,20 @@ export async function handleMsLogin() {
     setBtnLoading(true);
 
     try {
-        console.log("[Makita Login] Buscando vínculo Protheus para:", rawInput);
-        const vinculo = await buscarVinculoProtheus(rawInput);
-        console.log("[Makita Login] Resultado do vínculo:", vinculo);
+        const vinculo = await buscarVinculoProtheus(term);
 
         if (!vinculo || !vinculo.protheus) {
             setBtnLoading(false);
             _isLoggingIn = false;
-            showLoginErr(`O usuário "${rawInput}" não foi encontrado na base autorizada de promotores da Makita.`);
+            showLoginErr(`O utilizador "${term}" não está autorizado a aceder ao sistema.`);
             return;
         }
 
-        console.log("[Makita Login] Realizando login para:", vinculo.email || rawInput);
-        await simularLogin(vinculo.email || rawInput);
-        console.log("[Makita Login] Login simulado concluído com sucesso!");
+        const loginUser = vinculo.email || (term.includes("@") ? term : `${term}@makita.com.br`);
+        await simularLogin(loginUser);
 
     } catch (err) {
-        console.error("[Makita Login] Erro inesperado ao verificar acesso:", err);
+        console.error("Erro ao verificar acesso:", err);
         setBtnLoading(false);
         _isLoggingIn = false;
         showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
@@ -2033,16 +2022,15 @@ window.carregarItensDoUsuario = carregarItensDoUsuario;
  */
 function initEventListeners() {
     // 1. Handlers de Eventos da Tela de Login
-    const btnLogin = document.getElementById("btn-seguinte");
-    const inputLogin = document.getElementById("login-email");
-
-    btnLogin?.addEventListener("click", (e) => {
-        e.preventDefault();
-        handleMsLogin();
+    document.addEventListener("click", (e) => {
+        if (e.target.closest("#btn-seguinte, #btn-login-ms")) {
+            e.preventDefault();
+            handleMsLogin();
+        }
     });
 
-    inputLogin?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.target.id === "login-email" || e.target.id === "login-email-ms")) {
             e.preventDefault();
             handleMsLogin();
         }
@@ -3284,6 +3272,7 @@ export function initDeviceAdaptations() {
 // Inicialização Robusta
 async function bootApp() {
     initDeviceAdaptations();
+    window.handleLogin = handleMsLogin;
     window.handleMsLogin = handleMsLogin;
     window.fecharModalSucesso = fecharModalSucesso;
     window.cancelarAutoRedirecionamento = cancelarAutoRedirecionamento;
