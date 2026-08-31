@@ -13,7 +13,6 @@ import { VINCULOS_INICIAIS } from "./config.js";
 import { AuthState } from "./auth.js";
 import { DevolucaoState, toggleItemSelecao, reiniciarFluxoDevolucao } from "./devolucoes.js";
 import { buscarAtivosPorProtheus } from "./api.js";
-import { showToast, setTab } from "./app.js";
 
 // Cache em memória para evitar consultas duplicadas de SKU
 const _cacheStatusEstoque = new Map();
@@ -406,7 +405,7 @@ export function fecharModalAuditoriaNaoComerciais() {
 export async function aplicarSelecaoAuditoriaNaDevolucao() {
     const checkboxes = document.querySelectorAll(".chk-item-auditoria:checked");
     if (!checkboxes || checkboxes.length === 0) {
-        showToast("Selecione ao menos 1 item para adicionar à devolução.", "warning");
+        if (window.showToast) window.showToast("Selecione ao menos 1 item para adicionar à devolução.", "warning");
         return;
     }
 
@@ -436,9 +435,9 @@ export async function aplicarSelecaoAuditoriaNaDevolucao() {
     fecharModalAuditoriaNaoComerciais();
 
     // Redireciona para a aba de Nova Devolução (Etapa 1) com os itens marcados
-    setTab("devolucao");
+    if (window.setTab) window.setTab("devolucao");
 
-    showToast(`${adicionados} item(ns) não-comerciais selecionados para devolução de ${promotorInfo?.nome || 'promotor'}!`, "success");
+    if (window.showToast) window.showToast(`${adicionados} item(ns) não-comerciais selecionados para devolução de ${promotorInfo?.nome || 'promotor'}!`, "success");
 }
 
 // Stub seguro para compatibilidade

@@ -8,8 +8,16 @@ import {
     simularLogin, 
     buscarVinculoProtheus,
     fazerLogout,
-    inicializarAuth
+    inicializarAuth,
+    handleLogin,
+    handleMsLogin
 } from "./auth.js";
+
+// Global binds imediatos
+if (typeof window !== "undefined") {
+    window.handleLogin = handleLogin;
+    window.handleMsLogin = handleLogin;
+}
 
 import { 
     DevolucaoState, 
@@ -1922,95 +1930,10 @@ export function exportarSolicitacoesParaExcel() {
     showToast("Planilha Excel gerada e baixada com sucesso!", "success");
 }
 
-let _isLoggingIn = false;
-
-/**
- * Fluxo de Login Microsoft / Corporativo
- */
-export async function handleMsLogin() {
-    if (_isLoggingIn) return;
-
-    const inputEl      = document.getElementById("login-email") || document.getElementById("login-email-ms");
-    const btnEl        = document.getElementById("btn-seguinte") || document.getElementById("btn-login-ms");
-    const loginErrorEl = document.getElementById("login-error");
-
-    function showLoginErr(msg) {
-        _isLoggingIn = false;
-        if (btnEl) {
-            btnEl.disabled = false;
-            btnEl.innerHTML = "Seguinte";
-        }
-        if (loginErrorEl) {
-            loginErrorEl.textContent = msg;
-            loginErrorEl.classList.remove("hidden");
-            loginErrorEl.style.removeProperty("display");
-            loginErrorEl.style.setProperty("display", "block", "important");
-        }
-        if (inputEl) inputEl.style.setProperty("border-bottom", "2px solid #e81123", "important");
-    }
-    function clearLoginErr() {
-        if (loginErrorEl) {
-            loginErrorEl.textContent = "";
-            loginErrorEl.classList.add("hidden");
-            loginErrorEl.style.setProperty("display", "none", "important");
-        }
-        if (inputEl) inputEl.style.removeProperty("border-bottom");
-    }
-    function setBtnLoading(loading) {
-        if (!btnEl) return;
-        if (loading) {
-            btnEl.disabled = true;
-            btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
-        } else {
-            btnEl.disabled = false;
-            btnEl.innerHTML = "Seguinte";
-        }
-    }
-
-    const term = (inputEl?.value || "").trim().toLowerCase();
-    clearLoginErr();
-
-    if (!term) {
-        showLoginErr("Insira o seu endereço de e-mail corporativo ou utilizador.");
-        inputEl?.focus();
-        return;
-    }
-
-    _isLoggingIn = true;
-    setBtnLoading(true);
-
-    try {
-        const vinculo = await buscarVinculoProtheus(term);
-
-        if (!vinculo || !vinculo.protheus) {
-            setBtnLoading(false);
-            _isLoggingIn = false;
-            showLoginErr(`O utilizador "${term}" não está autorizado a aceder ao sistema.`);
-            return;
-        }
-
-        const loginUser = vinculo.email || (term.includes("@") ? term : `${term}@makita.com.br`);
-        await simularLogin(loginUser);
-
-    } catch (err) {
-        console.error("Erro ao verificar acesso:", err);
-        setBtnLoading(false);
-        _isLoggingIn = false;
-        showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
-    } finally {
-        setTimeout(() => {
-            _isLoggingIn = false;
-            if (!AuthState.user && btnEl) {
-                btnEl.disabled = false;
-                btnEl.innerHTML = "Seguinte";
-            }
-        }, 1500);
-    }
-}
-
-// Global window aliases for inline onclick callbacks
-window.handleLogin = handleMsLogin;
-window.handleMsLogin = handleMsLogin;
+// Re-exportação e Global Window Binds
+export { handleLogin, handleMsLogin };
+window.handleLogin = handleLogin;
+window.handleMsLogin = handleLogin;
 window.fazerLogout = fazerLogout;
 window.setTab = setTab;
 window.renderAdmGeralScreen = renderAdmGeralScreen;
@@ -3224,14 +3147,14 @@ export function initDeviceAdaptations() {
         const root = document.documentElement;
         const body = document.body;
 
-        if (root) {
+        if (root && root.classList) {
             ["device-desktop", "device-android", "device-ios", "device-touch", "device-mobile"].forEach(cls => root.classList.remove(cls));
             root.classList.add(`device-${deviceType}`);
             if (isTouchDevice) root.classList.add("device-touch");
             if (window.isMobile) root.classList.add("device-mobile");
         }
 
-        if (body) {
+        if (body && body.classList) {
             ["device-desktop", "device-android", "device-ios", "device-touch", "device-mobile"].forEach(cls => body.classList.remove(cls));
             body.classList.add(`device-${deviceType}`);
             if (isTouchDevice) body.classList.add("device-touch");

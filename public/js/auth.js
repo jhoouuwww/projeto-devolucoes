@@ -376,6 +376,98 @@ export async function inicializarAuth() {
     notifyAuth();
 }
 
+let _isLoggingIn = false;
+
+/**
+ * Handler oficial de Login Microsoft (Seguinte)
+ */
+export async function handleLogin(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (_isLoggingIn) return;
+
+    const inputEl      = document.getElementById("login-email") || document.getElementById("login-email-ms");
+    const btnEl        = document.getElementById("btn-seguinte") || document.getElementById("btn-login-ms");
+    const loginErrorEl = document.getElementById("login-error");
+
+    function showLoginErr(msg) {
+        _isLoggingIn = false;
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = "Seguinte";
+        }
+        if (loginErrorEl) {
+            loginErrorEl.textContent = msg;
+            loginErrorEl.classList.remove("hidden");
+            loginErrorEl.style.removeProperty("display");
+            loginErrorEl.style.setProperty("display", "block", "important");
+        }
+        if (inputEl) inputEl.style.setProperty("border-bottom", "2px solid #e81123", "important");
+    }
+
+    function clearLoginErr() {
+        if (loginErrorEl) {
+            loginErrorEl.textContent = "";
+            loginErrorEl.classList.add("hidden");
+            loginErrorEl.style.setProperty("display", "none", "important");
+        }
+        if (inputEl) inputEl.style.removeProperty("border-bottom");
+    }
+
+    const term = (inputEl?.value || "").trim().toLowerCase();
+    clearLoginErr();
+
+    if (!term) {
+        showLoginErr("Insira o seu endereço de e-mail corporativo ou utilizador.");
+        inputEl?.focus();
+        return;
+    }
+
+    _isLoggingIn = true;
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+    }
+
+    try {
+        const vinculo = await buscarVinculoProtheus(term);
+
+        if (!vinculo || !vinculo.protheus) {
+            _isLoggingIn = false;
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = "Seguinte";
+            }
+            showLoginErr(`O utilizador "${term}" não está autorizado a aceder ao sistema.`);
+            return;
+        }
+
+        const loginUser = vinculo.email || (term.includes("@") ? term : `${term}@makita.com.br`);
+        await simularLogin(loginUser);
+
+    } catch (err) {
+        console.error("Erro ao verificar acesso:", err);
+        _isLoggingIn = false;
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = "Seguinte";
+        }
+        showLoginErr("Ocorreu um erro ao verificar o acesso. Tente novamente.");
+    } finally {
+        _isLoggingIn = false;
+        if (!AuthState.user && btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = "Seguinte";
+        }
+    }
+}
+
+export const handleMsLogin = handleLogin;
+
+if (typeof window !== "undefined") {
+    window.handleLogin = handleLogin;
+    window.handleMsLogin = handleLogin;
+}
+
 // Observador do Firebase Auth — ignora eventos null enquanto houver sessão simulada ativa
 onAuthStateChanged(auth, async (user) => {
     if (user) {
